@@ -46,6 +46,10 @@ Open **Marketing → Agent001 Assistant** in the Magento Admin and follow the se
 | `agent001:sync [--store=<code\|id>]` | Queue a full catalog export |
 | `agent001:sync --due` | Queue the nightly export when due |
 
+## Support
+
+Contact form: https://agent001.ai/contact/ · E-mail: biuro@okinet.pl
+
 ## License
 
-Proprietary. © Agent001.
+Proprietary. © Okinet s.c. (Agent001).
