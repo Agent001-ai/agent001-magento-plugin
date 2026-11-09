@@ -6,9 +6,9 @@ namespace Agent001\Assistant\Model\Client\DTO;
 
 use UnexpectedValueException;
 
-readonly class AgentStatusDTO
+class AgentStatusDTO
 {
-    public function __construct(public string $id, public bool $active)
+    public function __construct(public readonly string $id, public readonly bool $active)
     {
     }
 

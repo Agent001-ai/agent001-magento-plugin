@@ -20,14 +20,10 @@ class Config
 
     public function baseUrl(bool $internal = false): string
     {
-        $public = getenv(name: 'AGENT001_BASE_URL') ?: $this->deployment->get(
-            key: 'agent001/base_url',
-            defaultValue: 'https://app.agent001.ai',
-        );
-        $url = $internal ? (getenv(name: 'AGENT001_INTERNAL_BASE_URL') ?: $this->deployment->get(
-            key: 'agent001/internal_base_url',
-            defaultValue: $public,
-        )) : $public;
+        $public = $this->deployment->get(key: 'agent001/base_url', defaultValue: 'https://app.agent001.ai');
+        $url = $internal
+            ? $this->deployment->get(key: 'agent001/internal_base_url', defaultValue: $public)
+            : $public;
         $this->validateUrl(url: (string) $url);
         return rtrim(string: (string) $url, characters: '/');
     }

@@ -6,7 +6,7 @@ namespace Agent001\Assistant\Model\Client\DTO;
 
 use UnexpectedValueException;
 
-readonly class AgentDTO
+class AgentDTO
 {
     public const UUID = '/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i';
 
@@ -14,11 +14,11 @@ readonly class AgentDTO
      * @param list<string> $channels
      */
     public function __construct(
-        public string $id,
-        public string $name,
-        public string $embedToken,
-        public bool $active,
-        public array $channels,
+        public readonly string $id,
+        public readonly string $name,
+        public readonly string $embedToken,
+        public readonly bool $active,
+        public readonly array $channels,
     ) {
     }
 

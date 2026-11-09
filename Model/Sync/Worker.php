@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agent001\Assistant\Model\Sync;
 
+use Agent001\Assistant\Model\Catalog\Stock;
 use Agent001\Assistant\Model\Config;
 use Agent001\Assistant\Model\Settings;
 use Magento\Framework\Lock\LockManagerInterface;
@@ -22,6 +23,7 @@ class Worker
         private readonly LockManagerInterface $locks,
         private readonly Emulation $emulation,
         private readonly LoggerInterface $logger,
+        private readonly Stock $stock,
     ) {
     }
 
@@ -54,6 +56,10 @@ class Worker
                 }
                 if ($job['kind'] === 'product' && empty($setting['setup_completed'])) {
                     $this->queue->finish(job: $job);
+                    continue;
+                }
+                if ($job['kind'] === 'product' && $this->stock->indexing()) {
+                    $this->queue->defer(job: $job, seconds: 60);
                     continue;
                 }
                 $this->emulation->startEnvironmentEmulation(storeId: $storeId, area: 'frontend', force: true);

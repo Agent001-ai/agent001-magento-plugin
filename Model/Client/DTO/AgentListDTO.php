@@ -6,9 +6,9 @@ namespace Agent001\Assistant\Model\Client\DTO;
 
 use UnexpectedValueException;
 
-readonly class AgentListDTO
+class AgentListDTO
 {
-    public function __construct(public array $agents, public array $selectedIds)
+    public function __construct(public readonly array $agents, public readonly array $selectedIds)
     {
     }
 

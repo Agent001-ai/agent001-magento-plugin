@@ -4,8 +4,8 @@ AI shopping assistant for Magento Open Source and Adobe Commerce. The module con
 
 ## Requirements
 
-- Magento Open Source or Adobe Commerce 2.4.7 – 2.4.8
-- PHP 8.2 or later, as supported by your Magento release, with curl, intl and mbstring
+- Magento Open Source or Adobe Commerce 2.4.4 – 2.4.8
+- PHP 8.1 or later, as supported by your Magento release, with curl, intl and mbstring
 - Works with and without Multi-Source Inventory
 - A running background worker: `bin/magento agent001:work`
 

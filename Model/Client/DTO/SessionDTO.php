@@ -6,9 +6,9 @@ namespace Agent001\Assistant\Model\Client\DTO;
 
 use UnexpectedValueException;
 
-readonly class SessionDTO
+class SessionDTO
 {
-    public function __construct(public string $status)
+    public function __construct(public readonly string $status)
     {
     }
 

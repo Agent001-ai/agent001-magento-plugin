@@ -6,9 +6,9 @@ namespace Agent001\Assistant\Model\Client\DTO;
 
 use UnexpectedValueException;
 
-readonly class ConnectionDTO
+class ConnectionDTO
 {
-    public function __construct(public string $apiKey, public string $accountName)
+    public function __construct(public readonly string $apiKey, public readonly string $accountName)
     {
     }
 

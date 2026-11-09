@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Agent001\Assistant\Model\Catalog;
 
+use InvalidArgumentException;
 use Magento\Catalog\Model\Product;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
+use Magento\Framework\Indexer\IndexerRegistry;
 use Magento\Framework\Module\Manager as ModuleManager;
 use Magento\Framework\ObjectManagerInterface;
 use Magento\InventorySalesApi\Api\GetProductSalableQtyInterface;
@@ -21,7 +23,23 @@ class Stock
         private readonly ModuleManager $modules,
         private readonly ObjectManagerInterface $objects,
         private readonly StockRegistryInterface $registry,
+        private readonly IndexerRegistry $indexers,
     ) {
+    }
+
+    public function indexing(): bool
+    {
+        try {
+            $indexer = $this->indexers->get(indexerId: $this->msi() ? 'inventory' : 'cataloginventory_stock');
+        } catch (InvalidArgumentException) {
+            return false;
+        }
+        if (!$indexer->isScheduled()) {
+            return false;
+        }
+        $view = $indexer->getView();
+        $state = $view->getState()->loadByView(viewId: $view->getId());
+        return (int) $view->getChangelog()->getVersion() > (int) $state->getVersionId();
     }
 
     public function id(StoreInterface $store): int
