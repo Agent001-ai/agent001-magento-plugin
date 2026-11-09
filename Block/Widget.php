@@ -20,7 +20,7 @@ class Widget extends Template implements IdentityInterface
         private readonly SecureHtmlRenderer $secureRenderer,
         array $data = [],
     ) {
-        parent::__construct(context: $context, data: $data);
+        parent::__construct($context, $data);
     }
 
     public function scriptHtml(): string
@@ -30,10 +30,10 @@ class Widget extends Template implements IdentityInterface
             return '';
         }
         return $this->secureRenderer->renderTag(
-            tagName: 'script',
-            attributes: $attributes,
-            content: '',
-            textContent: false,
+            'script',
+            $attributes,
+            '',
+            false,
         );
     }
 

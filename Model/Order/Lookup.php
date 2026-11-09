@@ -26,9 +26,9 @@ class Lookup
     {
         $collection = $this->orders->create();
         if ($storeId !== null) {
-            $collection->addFieldToFilter(field: 'store_id', condition: $storeId);
+            $collection->addFieldToFilter('store_id', $storeId);
         }
-        $collection->addFieldToFilter(field: 'increment_id', condition: $number)->setPageSize(size: 10);
+        $collection->addFieldToFilter('increment_id', $number)->setPageSize(10);
         $email = mb_strtolower(string: trim(string: $email));
         $orderId = 0;
         foreach ($collection as $candidate) {
@@ -40,7 +40,7 @@ class Lookup
         if (!$orderId) {
             return null;
         }
-        $order = $this->repository->get(id: $orderId);
+        $order = $this->repository->get($orderId);
         $currency = (string) $order->getOrderCurrencyCode();
         $tracks = [];
         foreach ($order->getTracksCollection() as $track) {
@@ -81,7 +81,7 @@ class Lookup
         return [
             'order_number' => (string) $order->getIncrementId(),
             'status' => (string) $order->getStatus(),
-            'status_label' => (string) __($this->config->getStatusLabel(code: $order->getStatus())),
+            'status_label' => (string) __($this->config->getStatusLabel($order->getStatus())),
             'created_at' => $this->date(value: $order->getCreatedAt()),
             'updated_at' => $this->date(value: $order->getUpdatedAt()),
             'paid_at' => null,

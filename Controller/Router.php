@@ -22,9 +22,9 @@ class Router implements RouterInterface
         if (!preg_match(pattern: '~^/agent001/v1/orders/([^/]{1,128})/?$~', subject: $path, matches: $matches)) {
             return null;
         }
-        $request->setModuleName(value: 'agent001')->setControllerName(value: 'orders')->setActionName(value: 'lookup');
-        $request->setRouteName(route: 'agent001');
-        $request->setParam(key: 'number', value: rawurldecode(string: $matches[1]));
-        return $this->actions->create(actionName: Lookup::class);
+        $request->setModuleName('agent001')->setControllerName('orders')->setActionName('lookup');
+        $request->setRouteName('agent001');
+        $request->setParam('number', rawurldecode(string: $matches[1]));
+        return $this->actions->create(Lookup::class);
     }
 }

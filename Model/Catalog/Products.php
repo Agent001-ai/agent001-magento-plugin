@@ -26,29 +26,29 @@ class Products
 
     public function read(int $storeId, array $categoryIds, ?int $onlyId = null): Generator
     {
-        $store = $this->stores->getStore(storeId: $storeId);
+        $store = $this->stores->getStore($storeId);
         $scope = [
             'store' => $store,
             'stock_id' => $this->stock->id(store: $store),
             'currency' => (string) $store->getCurrentCurrencyCode(),
             'categories' => $this->categories->all(storeId: $storeId),
-            'media' => $store->getBaseUrl(type: 'media', secure: true) . 'catalog/product/',
+            'media' => $store->getBaseUrl('media', true) . 'catalog/product/',
         ];
         $after = 0;
         do {
             $collection = $this->factory->create();
-            $collection->setStoreId(storeId: $storeId)->addStoreFilter(store: $storeId);
-            $collection->addAttributeToSelect(attribute: '*');
-            $collection->addAttributeToFilter(attribute: 'status', condition: 1);
-            $collection->addAttributeToFilter(attribute: 'visibility', condition: ['in' => [2, 3, 4]]);
-            $collection->addFieldToFilter(attribute: 'entity_id', condition: ['gt' => $after]);
+            $collection->setStoreId($storeId)->addStoreFilter($storeId);
+            $collection->addAttributeToSelect('*');
+            $collection->addAttributeToFilter('status', 1);
+            $collection->addAttributeToFilter('visibility', ['in' => [2, 3, 4]]);
+            $collection->addFieldToFilter('entity_id', ['gt' => $after]);
             if ($onlyId !== null) {
-                $collection->addFieldToFilter(attribute: 'entity_id', condition: $onlyId);
+                $collection->addFieldToFilter('entity_id', $onlyId);
             }
             if (!empty($categoryIds)) {
-                $collection->addCategoriesFilter(categoriesFilter: ['in' => $categoryIds]);
+                $collection->addCategoriesFilter(['in' => $categoryIds]);
             }
-            $collection->setOrder(attribute: 'entity_id', dir: 'ASC')->setPageSize(size: 100);
+            $collection->setOrder('entity_id', 'ASC')->setPageSize(100);
             $items = $collection->getItems();
             foreach ($items as $product) {
                 $after = (int) $product->getId();
@@ -74,8 +74,8 @@ class Products
         $variations = [];
         $type = $product->getTypeInstance();
         if ($type instanceof Configurable) {
-            $options = $type->getConfigurableAttributesAsArray(product: $product);
-            foreach ($type->getUsedProducts(product: $product) as $child) {
+            $options = $type->getConfigurableAttributesAsArray($product);
+            foreach ($type->getUsedProducts($product) as $child) {
                 $salable = $this->stock->salable(product: $child, stockId: $scope['stock_id']);
                 if ((int) $child->getStatus() !== 1 || !$salable) {
                     continue;
@@ -84,8 +84,8 @@ class Products
                 $params = [];
                 foreach ($options as $option) {
                     $code = $option['attribute_code'];
-                    $params[(int) $option['attribute_id']] = $child->getData(key: $code);
-                    $variant['attributes'][$option['label']] = (string) $child->getAttributeText(attributeCode: $code);
+                    $params[(int) $option['attribute_id']] = $child->getData($code);
+                    $variant['attributes'][$option['label']] = (string) $child->getAttributeText($code);
                 }
                 $variant['url'] = $base['url'] . '#' . http_build_query(data: $params);
                 $variations[] = $variant;
@@ -112,7 +112,7 @@ class Products
         }
         $images = [];
         foreach (['image', 'small_image', 'thumbnail'] as $field) {
-            $image = (string) $product->getData(key: $field);
+            $image = (string) $product->getData($field);
             if (!empty($image) && $image !== 'no_selection') {
                 $images[] = $scope['media'] . ltrim(string: $image, characters: '/');
             }
@@ -144,11 +144,11 @@ class Products
     private function variant(Product $product, array $scope): array
     {
         $prices = $product->getPriceInfo();
-        $finalPrice = $prices->getPrice(priceCode: 'final_price');
+        $finalPrice = $prices->getPrice('final_price');
         $price = in_array(needle: $product->getTypeId(), haystack: self::MULTI_PRICE, strict: true)
             ? (float) $finalPrice->getMinimalPrice()->getValue()
             : (float) $finalPrice->getAmount()->getValue();
-        $regular = (float) $prices->getPrice(priceCode: 'regular_price')->getAmount()->getValue();
+        $regular = (float) $prices->getPrice('regular_price')->getAmount()->getValue();
         $quantity = null;
         if (in_array(needle: $product->getTypeId(), haystack: ['simple', 'virtual', 'downloadable'], strict: true)) {
             $quantity = $this->stock->quantity(
@@ -163,9 +163,9 @@ class Products
             if (!$attribute->getIsVisibleOnFront()) {
                 continue;
             }
-            $value = $attribute->getFrontend()->getValue(object: $product);
+            $value = $attribute->getFrontend()->getValue($product);
             if (is_scalar(value: $value) && (string) $value !== '') {
-                $label = (string) $attribute->getStoreLabel(storeId: $storeId);
+                $label = (string) $attribute->getStoreLabel($storeId);
                 $attributes[$label] = strip_tags(string: (string) $value);
             }
         }

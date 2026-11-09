@@ -17,6 +17,7 @@ use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -35,6 +36,7 @@ class Lookup implements
         private readonly Config $config,
         private readonly Access $access,
         private readonly OrderLookup $lookup,
+        private readonly RemoteAddress $remoteAddress,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -42,13 +44,13 @@ class Lookup implements
     public function execute(): Json
     {
         $result = $this->json->create();
-        $result->setHeader(name: 'Cache-Control', value: 'no-store, private', replace: true);
-        $result->setHeader(name: 'Vary', value: 'Origin', replace: true);
+        $result->setHeader('Cache-Control', 'no-store, private', true);
+        $result->setHeader('Vary', 'Origin', true);
         try {
             $storeId = (int) $this->stores->getStore()->getId();
             $setting = $this->settings->get(storeId: $storeId);
             $site = $this->config->site(storeId: $storeId);
-            $origin = (string) $this->request->getHeader(name: 'Origin');
+            $origin = (string) $this->request->getHeader('Origin');
             $allowed = [
                 Config::origin(url: $site),
                 Config::origin(url: $this->config->baseUrl()),
@@ -56,55 +58,57 @@ class Lookup implements
             ];
             $cors = !empty($origin) && in_array(needle: $origin, haystack: $allowed, strict: true);
             if ($cors) {
-                $result->setHeader(name: 'Access-Control-Allow-Origin', value: $origin, replace: true);
-                $result->setHeader(name: 'Access-Control-Allow-Methods', value: 'GET, POST, OPTIONS', replace: true);
-                $result->setHeader(
-                    name: 'Access-Control-Allow-Headers',
-                    value: 'Content-Type, X-Agent001-Auth',
-                    replace: true,
-                );
+                $result->setHeader('Access-Control-Allow-Origin', $origin, true);
+                $result->setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS', true);
+                $result->setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Agent001-Auth', true);
             }
-            if ($this->request->getMethod() === 'OPTIONS') {
-                return $result->setHttpResponseCode(httpCode: $cors ? 204 : 403)->setData(data: []);
+            $method = $this->request->getMethod();
+            if ($method === 'OPTIONS') {
+                return $result->setHttpResponseCode($cors ? 204 : 403)->setData([]);
             }
-            $auth = (string) $this->request->getHeader(name: 'X-Agent001-Auth');
+            $auth = (string) $this->request->getHeader('X-Agent001-Auth');
             $role = $this->access->role(key: $auth, setting: $setting);
             if (empty($role) || ($role === 'widget' && ($setting['site'] ?? '') !== $site)) {
                 return $this->error(result: $result, code: 'agent001_unauthorized', status: 401);
             }
-            $ip = (string) $this->request->getServerValue(name: 'REMOTE_ADDR');
-            if ($role === 'widget' && !$this->access->allow(storeId: $storeId, ip: $ip)) {
-                $result->setHeader(name: 'Retry-After', value: '60', replace: true);
-                return $this->error(result: $result, code: 'agent001_rate_limited', status: 429);
+            $widget = $role === 'widget';
+            if ($method !== 'POST') {
+                return $this->error(result: $result, code: 'agent001_invalid_request', status: 405);
             }
-            $data = $this->request->getParams();
-            if ($this->request->getMethod() === 'POST') {
-                $body = (string) $this->request->getContent();
-                if (strlen(string: $body) > 4096) {
-                    return $this->error(result: $result, code: 'agent001_invalid_request', status: 400);
-                }
-                $data = json_decode(json: $body, associative: true, flags: JSON_THROW_ON_ERROR);
+            $ip = (string) $this->remoteAddress->getRemoteAddress();
+            if ($widget && !$this->access->allow(storeId: $storeId, ip: $ip)) {
+                return $this->rateLimited(result: $result);
             }
+            $body = (string) $this->request->getContent();
+            if (strlen(string: $body) > 4096) {
+                return $this->error(result: $result, code: 'agent001_invalid_request', status: 400);
+            }
+            $data = json_decode(json: $body, associative: true, flags: JSON_THROW_ON_ERROR);
             $email = is_array(value: $data) ? ($data['email'] ?? null) : null;
             $email = is_string(value: $email) ? trim(string: $email) : '';
             if (empty($email)) {
                 return $this->error(result: $result, code: 'agent001_missing_email', status: 400);
             }
-            $number = $this->request->getParam(key: 'number');
+            $number = $this->request->getParam('number');
             if (!filter_var(value: $email, filter: FILTER_VALIDATE_EMAIL)
                 || !is_string(value: $number) || strlen(string: $number) > 64) {
                 return $this->error(result: $result, code: 'agent001_order_not_found', status: 404);
             }
-            $order = $this->lookup->find(storeId: $role === 'widget' ? $storeId : null, number: $number, email: $email);
-            return $order ? $result->setData(data: $order)
-                : $this->error(result: $result, code: 'agent001_order_not_found', status: 404);
+            if ($widget && $this->access->blocked(storeId: $storeId, ip: $ip, number: $number, email: $email)) {
+                return $this->rateLimited(result: $result);
+            }
+            $order = $this->lookup->find(storeId: $widget ? $storeId : null, number: $number, email: $email);
+            if ($order) {
+                return $result->setData($order);
+            }
+            if ($widget) {
+                $this->access->fail(storeId: $storeId, ip: $ip, number: $number, email: $email);
+            }
+            return $this->error(result: $result, code: 'agent001_order_not_found', status: 404);
         } catch (JsonException) {
             return $this->error(result: $result, code: 'agent001_invalid_request', status: 400);
         } catch (Throwable $error) {
-            $this->logger->error(
-                message: 'Agent001 order lookup failed.',
-                context: ['exception_class' => $error::class],
-            );
+            $this->logger->error('Agent001 order lookup failed.', ['exception_class' => $error::class]);
             return $this->error(result: $result, code: 'agent001_unavailable', status: 503);
         }
     }
@@ -119,9 +123,14 @@ class Lookup implements
         return true;
     }
 
+    private function rateLimited(Json $result): Json
+    {
+        $result->setHeader('Retry-After', '60', true);
+        return $this->error(result: $result, code: 'agent001_rate_limited', status: 429);
+    }
+
     private function error(Json $result, string $code, int $status): Json
     {
-        return $result->setHttpResponseCode(httpCode: $status)
-            ->setData(data: ['code' => $code, 'message' => (string) __($code)]);
+        return $result->setHttpResponseCode($status)->setData(['code' => $code, 'message' => (string) __($code)]);
     }
 }

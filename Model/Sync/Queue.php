@@ -26,18 +26,18 @@ class Queue
             'revision' => bin2hex(string: random_bytes(length: 16)), 'attempts' => 0, 'available_at' => time() + $delay,
         ];
         $db->insertOnDuplicate(
-            table: $this->table(),
-            data: $data,
-            fields: ['generation', 'revision', 'attempts', 'available_at']
+            $this->table(),
+            $data,
+            ['generation', 'revision', 'attempts', 'available_at']
         );
     }
 
     public function ensurePoll(int $storeId, string $generation): void
     {
         $db = $this->resource->getConnection();
-        $exists = $db->fetchOne(sql: $db->select()
-            ->from(name: $this->table(), cols: ['job_key'])
-            ->where(cond: 'job_key = ?', value: 'poll_' . $storeId . '_0'));
+        $exists = $db->fetchOne($db->select()
+            ->from($this->table(), ['job_key'])
+            ->where('job_key = ?', 'poll_' . $storeId . '_0'));
         if (!$exists) {
             $this->enqueue(storeId: $storeId, generation: $generation, kind: 'poll');
         }
@@ -46,77 +46,77 @@ class Queue
     public function pending(int $limit): array
     {
         $db = $this->resource->getConnection();
-        return $db->fetchAll(sql: $db->select()->from(name: $this->table())
-            ->where(cond: 'available_at <= ?', value: time())->where(cond: 'attempts < ?', value: 5)
-            ->order(spec: 'kind ASC')->order(spec: 'available_at ASC')->limit(count: $limit));
+        return $db->fetchAll($db->select()->from($this->table())
+            ->where('available_at <= ?', time())->where('attempts < ?', 5)
+            ->order('kind ASC')->order('available_at ASC')->limit($limit));
     }
 
     public function current(array $job): bool
     {
         $db = $this->resource->getConnection();
-        return (bool) $db->fetchOne(sql: $db->select()
-            ->from(name: $this->table(), cols: ['job_key'])
-            ->where(cond: 'job_key = ?', value: $job['job_key'])->where(cond: 'revision = ?', value: $job['revision']));
+        return (bool) $db->fetchOne($db->select()
+            ->from($this->table(), ['job_key'])
+            ->where('job_key = ?', $job['job_key'])->where('revision = ?', $job['revision']));
     }
 
     public function finish(array $job): void
     {
         $this->resource->getConnection()->delete(
-            table: $this->table(),
-            where: ['job_key = ?' => $job['job_key'], 'revision = ?' => $job['revision']]
+            $this->table(),
+            ['job_key = ?' => $job['job_key'], 'revision = ?' => $job['revision']]
         );
     }
 
     public function defer(array $job, int $seconds, bool $failed = false): void
     {
         $this->resource->getConnection()->update(
-            table: $this->table(),
-            bind: ['available_at' => time() + $seconds, 'attempts' => (int) $job['attempts'] + ($failed ? 1 : 0)],
-            where: ['job_key = ?' => $job['job_key'], 'revision = ?' => $job['revision']]
+            $this->table(),
+            ['available_at' => time() + $seconds, 'attempts' => (int) $job['attempts'] + ($failed ? 1 : 0)],
+            ['job_key = ?' => $job['job_key'], 'revision = ?' => $job['revision']]
         );
     }
 
     public function clear(int $storeId): void
     {
         $this->resource->getConnection()->delete(
-            table: $this->table(),
-            where: ['store_id = ?' => $storeId]
+            $this->table(),
+            ['store_id = ?' => $storeId]
         );
     }
 
     public function retryFailed(): void
     {
         $this->resource->getConnection()->update(
-            table: $this->table(),
-            bind: ['attempts' => 0, 'available_at' => time()],
-            where: ['attempts >= ?' => 5]
+            $this->table(),
+            ['attempts' => 0, 'available_at' => time()],
+            ['attempts >= ?' => 5]
         );
     }
 
     public function stalled(int $storeId, int $seconds = 120): bool
     {
         $db = $this->resource->getConnection();
-        return (bool) $db->fetchOne(sql: $db->select()->from(
-            name: $this->table(),
-            cols: ['job_key'],
-        )->where(cond: 'store_id = ?', value: $storeId)
-            ->where(cond: 'kind IN (?)', value: ['full', 'poll'])
-            ->where(cond: 'attempts < ?', value: 5)
-            ->where(cond: 'available_at < ?', value: time() - $seconds)
-            ->limit(count: 1));
+        return (bool) $db->fetchOne($db->select()->from(
+            $this->table(),
+            ['job_key'],
+        )->where('store_id = ?', $storeId)
+            ->where('kind IN (?)', ['full', 'poll'])
+            ->where('attempts < ?', 5)
+            ->where('available_at < ?', time() - $seconds)
+            ->limit(1));
     }
 
     public function failures(int $storeId): int
     {
         $db = $this->resource->getConnection();
-        return (int) $db->fetchOne(sql: $db->select()->from(
-            name: $this->table(),
-            cols: ['COUNT(*)'],
-        )->where(cond: 'store_id = ?', value: $storeId)->where(cond: 'attempts >= ?', value: 5));
+        return (int) $db->fetchOne($db->select()->from(
+            $this->table(),
+            ['COUNT(*)'],
+        )->where('store_id = ?', $storeId)->where('attempts >= ?', 5));
     }
 
     private function table(): string
     {
-        return $this->resource->getTableName(modelEntity: 'agent001_job');
+        return $this->resource->getTableName('agent001_job');
     }
 }

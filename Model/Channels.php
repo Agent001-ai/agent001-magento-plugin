@@ -53,7 +53,7 @@ class Channels
     public function id(mixed $value): int
     {
         if (!is_scalar(value: $value) || !ctype_digit(text: (string) $value) || !isset($this->stores()[(int) $value])) {
-            throw new LocalizedException(phrase: __('Select an active store view.'));
+            throw new LocalizedException(__('Select an active store view.'));
         }
         return (int) $value;
     }

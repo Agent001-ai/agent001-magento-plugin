@@ -17,8 +17,8 @@ class Onboarding
     public function get(): array
     {
         $db = $this->resource->getConnection();
-        $row = $db->fetchRow(sql: $db->select()->from(name: $this->table())
-            ->where(cond: 'store_id = ?', value: Settings::INSTALLATION));
+        $row = $db->fetchRow($db->select()->from($this->table())
+            ->where('store_id = ?', Settings::INSTALLATION));
         if (!$row) {
             return ['status' => 'active', 'step' => 1, 'completed_at' => null];
         }
@@ -80,20 +80,20 @@ class Onboarding
 
     public function reset(): void
     {
-        $this->resource->getConnection()->delete(table: $this->table());
+        $this->resource->getConnection()->delete($this->table());
     }
 
     private function write(array $data): void
     {
         $this->resource->getConnection()->insertOnDuplicate(
-            table: $this->table(),
-            data: ['store_id' => Settings::INSTALLATION] + $data,
-            fields: array_keys(array: $data),
+            $this->table(),
+            ['store_id' => Settings::INSTALLATION] + $data,
+            array_keys(array: $data),
         );
     }
 
     private function table(): string
     {
-        return $this->resource->getTableName(modelEntity: 'agent001_onboarding');
+        return $this->resource->getTableName('agent001_onboarding');
     }
 }

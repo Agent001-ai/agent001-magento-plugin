@@ -26,7 +26,7 @@ class Connection
 
     public function start(int $storeId, string $settingsUrl): string
     {
-        if (!$this->locks->lock(name: 'agent001_connect', timeout: 0)) {
+        if (!$this->locks->lock('agent001_connect', 0)) {
             throw new RuntimeException(message: 'Another connection is in progress.');
         }
         try {
@@ -43,13 +43,13 @@ class Connection
                 'channel' => $this->config->channel(storeId: $storeId), 'platform' => 'magento',
             ]);
         } finally {
-            $this->locks->unlock(name: 'agent001_connect');
+            $this->locks->unlock('agent001_connect');
         }
     }
 
     public function complete(array $state, string $code): void
     {
-        if (!$this->locks->lock(name: 'agent001_connect', timeout: 0)) {
+        if (!$this->locks->lock('agent001_connect', 0)) {
             throw new RuntimeException(message: 'Another connection is in progress.');
         }
         try {
@@ -58,7 +58,13 @@ class Connection
                 || $this->config->defaultSite() !== $state['site']) {
                 throw new RuntimeException(message: 'Connection state has changed.');
             }
-            $response = $this->client->request(method: 'POST', path: '/connect/exchange', data: ['code' => $code]);
+            $response = $this->client->request(
+                method: 'POST',
+                path: '/connect/exchange',
+                data: ['code' => $code],
+                attempts: 1,
+                timeout: 10,
+            );
             $response = ConnectionDTO::from(record: $response);
             $this->settings->save(storeId: Settings::INSTALLATION, data: [
                 'api_key' => $response->apiKey, 'account_name' => $response->accountName, 'site' => $state['site'],
@@ -68,7 +74,7 @@ class Connection
                 $this->open(storeId: $storeId);
             }
         } finally {
-            $this->locks->unlock(name: 'agent001_connect');
+            $this->locks->unlock('agent001_connect');
         }
     }
 
@@ -123,7 +129,7 @@ class Connection
     private function tolerate(string $method, string $path, string $apiKey): void
     {
         try {
-            $this->client->request(method: $method, path: $path, apiKey: $apiKey);
+            $this->client->request(method: $method, path: $path, apiKey: $apiKey, attempts: 1, timeout: 10);
         } catch (RuntimeException $error) {
             if (!in_array(needle: $error->getCode(), haystack: [401, 404], strict: true)) {
                 throw $error;

@@ -17,12 +17,12 @@ class Categories
 
     public function all(int $storeId): array
     {
-        $root = (int) $this->stores->getStore(storeId: $storeId)->getRootCategoryId();
+        $root = (int) $this->stores->getStore($storeId)->getRootCategoryId();
         $collection = $this->factory->create();
-        $collection->setStoreId(storeId: $storeId)->addAttributeToSelect(attribute: ['name', 'url_key', 'is_active']);
-        $collection->addFieldToFilter(attribute: 'path', condition: ['like' => '1/' . $root . '/%']);
-        $collection->addAttributeToFilter(attribute: 'is_active', condition: 1);
-        $collection->setOrder(attribute: 'path', dir: 'ASC');
+        $collection->setStoreId($storeId)->addAttributeToSelect(['name', 'url_key', 'is_active']);
+        $collection->addFieldToFilter('path', ['like' => '1/' . $root . '/%']);
+        $collection->addAttributeToFilter('is_active', 1);
+        $collection->setOrder('path', 'ASC');
         $result = [];
         foreach ($collection as $category) {
             $result[(int) $category->getId()] = [

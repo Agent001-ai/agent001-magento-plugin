@@ -55,7 +55,7 @@ class Settings extends Template
         private readonly ScopeConfigInterface $scopeConfig,
         array $data = []
     ) {
-        parent::__construct(context: $context, data: $data);
+        parent::__construct($context, $data);
     }
 
     public function installation(): array
@@ -223,7 +223,7 @@ class Settings extends Template
     public function view(): int
     {
         $step = $this->step();
-        $requested = $this->getRequest()->getParam(key: 'step');
+        $requested = $this->getRequest()->getParam('step');
         if (!is_scalar(value: $requested) || !ctype_digit(text: (string) $requested)) {
             return $step;
         }
@@ -233,12 +233,12 @@ class Settings extends Template
 
     public function confirmHtml(string $message): string
     {
-        return empty($message) ? '' : 'data-confirm="' . $this->_escaper->escapeHtmlAttr(string: $message) . '"';
+        return empty($message) ? '' : 'data-confirm="' . $this->_escaper->escapeHtmlAttr($message) . '"';
     }
 
     public function stepUrl(int $step): string
     {
-        return $this->getUrl(route: 'agent001/settings/index', params: ['step' => $step]);
+        return $this->getUrl('agent001/settings/index', ['step' => $step]);
     }
 
     public function steps(): array
@@ -252,9 +252,9 @@ class Settings extends Template
             return '';
         }
         return $this->_localeDate->formatDateTime(
-            date: $date,
-            dateType: IntlDateFormatter::MEDIUM,
-            timeType: IntlDateFormatter::SHORT,
+            $date,
+            IntlDateFormatter::MEDIUM,
+            IntlDateFormatter::SHORT,
         );
     }
 
@@ -273,22 +273,22 @@ class Settings extends Template
 
     public function refreshUrl(): string
     {
-        return $this->getUrl(route: 'agent001/settings/index');
+        return $this->getUrl('agent001/settings/index');
     }
 
     public function formStartHtml(string $id = ''): string
     {
-        $attribute = empty($id) ? '' : ' id="' . $this->_escaper->escapeHtmlAttr(string: $id) . '"';
+        $attribute = empty($id) ? '' : ' id="' . $this->_escaper->escapeHtmlAttr($id) . '"';
         return '<form method="post"' . $attribute
-            . ' action="' . $this->_escaper->escapeUrl(string: $this->saveUrl()) . '">'
+            . ' action="' . $this->_escaper->escapeUrl($this->saveUrl()) . '">'
             . '<input type="hidden" name="form_key" value="'
-            . $this->_escaper->escapeHtmlAttr(string: $this->getFormKey()) . '">';
+            . $this->_escaper->escapeHtmlAttr($this->getFormKey()) . '">';
     }
 
     public function jsConfig(): string
     {
-        return $this->json->serialize(data: ['Agent001_Assistant/js/settings' => [
-            'progressUrl' => $this->getUrl(route: 'agent001/settings/progress'),
+        return $this->json->serialize(['Agent001_Assistant/js/settings' => [
+            'progressUrl' => $this->getUrl('agent001/settings/progress'),
             'step' => $this->wizard() ? $this->step() : 0,
         ]]);
     }
@@ -320,6 +320,6 @@ class Settings extends Template
 
     private function saveUrl(): string
     {
-        return $this->getUrl(route: 'agent001/settings/save');
+        return $this->getUrl('agent001/settings/save');
     }
 }

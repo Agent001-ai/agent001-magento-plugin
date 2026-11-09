@@ -20,9 +20,9 @@ class Config
 
     public function baseUrl(bool $internal = false): string
     {
-        $public = $this->deployment->get(key: 'agent001/base_url', defaultValue: 'https://app.agent001.ai');
+        $public = $this->deployment->get('agent001/base_url', 'https://app.agent001.ai');
         $url = $internal
-            ? $this->deployment->get(key: 'agent001/internal_base_url', defaultValue: $public)
+            ? $this->deployment->get('agent001/internal_base_url', $public)
             : $public;
         $this->validateUrl(url: (string) $url);
         return rtrim(string: (string) $url, characters: '/');
@@ -30,11 +30,11 @@ class Config
 
     public function site(int $storeId): string
     {
-        $store = $this->stores->getStore(storeId: $storeId);
+        $store = $this->stores->getStore($storeId);
         if (!$store->getId() || !$store->isActive()) {
             throw new InvalidArgumentException(message: 'The store view is inactive.');
         }
-        $url = $store->getBaseUrl(type: 'link', secure: true);
+        $url = $store->getBaseUrl('link', true);
         $this->validateUrl(url: $url);
         return rtrim(string: $url, characters: '/');
     }
@@ -50,7 +50,7 @@ class Config
 
     public function channel(int $storeId): string
     {
-        return 'store:' . $this->stores->getStore(storeId: $storeId)->getCode();
+        return 'store:' . $this->stores->getStore($storeId)->getCode();
     }
 
     public function storeHosts(): array
@@ -60,7 +60,7 @@ class Config
             if (!$store->isActive()) {
                 continue;
             }
-            $url = (string) $store->getBaseUrl(type: 'link', secure: true);
+            $url = (string) $store->getBaseUrl('link', true);
             $host = strtolower(string: (string) parse_url(url: $url, component: PHP_URL_HOST));
             if (preg_match(pattern: self::HOST_PATTERN, subject: $host)) {
                 $hosts[$host] = true;
@@ -84,7 +84,7 @@ class Config
 
     public function allowedOrigins(): array
     {
-        return (array) $this->deployment->get(key: 'agent001/allowed_origins', defaultValue: []);
+        return (array) $this->deployment->get('agent001/allowed_origins', []);
     }
 
     private function validateUrl(string $url): void

@@ -17,9 +17,9 @@ class NonceStore
     {
         $token = bin2hex(string: random_bytes(length: 32));
         $db = $this->resource->getConnection();
-        $table = $this->resource->getTableName(modelEntity: 'agent001_nonce');
-        $db->delete(table: $table, where: ['expires_at < ?' => time()]);
-        $db->insert(table: $table, bind: [
+        $table = $this->resource->getTableName('agent001_nonce');
+        $db->delete($table, ['expires_at < ?' => time()]);
+        $db->insert($table, [
             'token_hash' => hash(algo: 'sha256', data: $token),
             'data' => json_encode(value: $data, flags: JSON_THROW_ON_ERROR),
             'expires_at' => time() + 900,
@@ -33,13 +33,13 @@ class NonceStore
             return [];
         }
         $db = $this->resource->getConnection();
-        $table = $this->resource->getTableName(modelEntity: 'agent001_nonce');
+        $table = $this->resource->getTableName('agent001_nonce');
         $hash = hash(algo: 'sha256', data: $token);
         $db->beginTransaction();
         try {
-            $row = $db->fetchRow(sql: $db->select()->from(name: $table)
-                ->where(cond: 'token_hash = ?', value: $hash)->forUpdate());
-            $db->delete(table: $table, where: ['token_hash = ?' => $hash]);
+            $row = $db->fetchRow($db->select()->from($table)
+                ->where('token_hash = ?', $hash)->forUpdate());
+            $db->delete($table, ['token_hash = ?' => $hash]);
             $db->commit();
         } catch (Throwable $error) {
             $db->rollBack();

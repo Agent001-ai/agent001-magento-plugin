@@ -23,7 +23,7 @@ class Index extends Action implements HttpGetActionInterface
         private readonly Settings $settings,
         private readonly Onboarding $onboarding,
     ) {
-        parent::__construct(context: $context);
+        parent::__construct($context);
     }
 
     public function execute()
@@ -33,8 +33,8 @@ class Index extends Action implements HttpGetActionInterface
             channels: $this->channels->settings(),
         );
         $page = $this->pages->create();
-        $page->setActiveMenu(itemId: 'Agent001_Assistant::settings');
-        $page->getConfig()->getTitle()->prepend(prefix: 'Agent001');
+        $page->setActiveMenu('Agent001_Assistant::settings');
+        $page->getConfig()->getTitle()->prepend('Agent001');
         return $page;
     }
 }

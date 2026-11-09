@@ -22,6 +22,8 @@ class Agents
             path: '/api/v1/integrations/me/agents',
             apiKey: $apiKey,
             channel: $channel,
+            attempts: 1,
+            timeout: 5,
         );
         return AgentListDTO::from(record: $response);
     }
@@ -33,6 +35,8 @@ class Agents
             path: '/api/v1/integrations/me/store-hosts',
             apiKey: $apiKey,
             data: ['hosts' => array_values(array: $hosts)],
+            attempts: 1,
+            timeout: 10,
         );
     }
 
@@ -42,6 +46,8 @@ class Agents
             method: 'PUT',
             path: '/api/v1/integrations/me/catalogs/' . rawurlencode(string: $channel),
             apiKey: $apiKey,
+            attempts: 1,
+            timeout: 10,
         );
         $response = $this->client->request(
             method: 'PUT',
@@ -49,6 +55,8 @@ class Agents
             apiKey: $apiKey,
             data: ['agent_ids' => [$id]],
             channel: $channel,
+            attempts: 1,
+            timeout: 10,
         );
         $response = AgentListDTO::from(record: $response);
         foreach ($response->agents as $agent) {
@@ -60,6 +68,8 @@ class Agents
                     apiKey: $apiKey,
                     data: ['domain' => parse_url(url: $site, component: PHP_URL_HOST)],
                     channel: $channel,
+                    attempts: 1,
+                    timeout: 10,
                 );
                 return $agent;
             }
@@ -75,6 +85,8 @@ class Agents
             apiKey: $apiKey,
             data: ['active' => $active],
             channel: $channel,
+            attempts: 1,
+            timeout: 10,
         );
         $response = AgentStatusDTO::from(record: $response);
         if ($response->id !== $id || $response->active !== $active) {

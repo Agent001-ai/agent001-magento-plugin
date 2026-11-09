@@ -28,7 +28,7 @@ class Progress extends Action implements HttpGetActionInterface
         private readonly JsonFactory $json,
         private readonly TimezoneInterface $timezone,
     ) {
-        parent::__construct(context: $context);
+        parent::__construct($context);
     }
 
     public function execute()
@@ -47,16 +47,16 @@ class Progress extends Action implements HttpGetActionInterface
                 'count' => (int) ($setting['count'] ?? 0),
                 'message' => (string) __($setting['message'] ?? ''),
                 'last_sync_at' => empty($date) ? '' : $this->timezone->formatDateTime(
-                    date: $date,
-                    dateType: IntlDateFormatter::MEDIUM,
-                    timeType: IntlDateFormatter::SHORT,
+                    $date,
+                    IntlDateFormatter::MEDIUM,
+                    IntlDateFormatter::SHORT,
                 ),
                 'failed_jobs' => $this->queue->failures(storeId: $storeId),
                 'stalled' => $this->queue->stalled(storeId: $storeId),
             ];
         }
         return $this->json->create()
-            ->setHeader(name: 'Cache-Control', value: 'no-store', replace: true)
-            ->setData(data: ['step' => $progress['step'], 'channels' => $channels]);
+            ->setHeader('Cache-Control', 'no-store', true)
+            ->setData(['step' => $progress['step'], 'channels' => $channels]);
     }
 }

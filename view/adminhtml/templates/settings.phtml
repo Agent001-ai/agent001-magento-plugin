@@ -7,20 +7,20 @@ $agents = $block->agents();
 $wizard = $block->wizard();
 $step = $block->step();
 $view = $block->view();
-$connect = $block->getRequest()->getParam(key: 'connect');
+$connect = $block->getRequest()->getParam('connect');
 $failed = $block->agentsFailed();
 $badge = static function (array $setting) use ($escaper): void {
     $code = (string) ($setting['status'] ?? 'idle'); ?>
     <span class="agent001-badge"
           data-role="sync-status"
-          data-status="<?= $escaper->escapeHtmlAttr(string: $code) ?>"><?= $escaper->escapeHtml(data: __($code)) ?></span>
+          data-status="<?= $escaper->escapeHtmlAttr($code) ?>"><?= $escaper->escapeHtml(__($code)) ?></span>
 <?php };
 $meta = static function (array $setting) use ($escaper, $block): void {
     $date = $block->syncDate(date: (string) ($setting['last_sync_at'] ?? '')); ?>
     <span class="agent001-meta">
-        <?= $escaper->escapeHtml(data: __('Products')) ?>:
+        <?= $escaper->escapeHtml(__('Products')) ?>:
         <span data-role="sync-count"><?= (int) ($setting['count'] ?? 0) ?></span>
-        <span data-role="sync-date" <?= empty($date) ? 'hidden' : '' ?>><?= $escaper->escapeHtml(data: $date) ?></span>
+        <span data-role="sync-date" <?= empty($date) ? 'hidden' : '' ?>><?= $escaper->escapeHtml($date) ?></span>
     </span>
 <?php };
 $status = static function (int $storeId, array $channel) use ($escaper, $badge, $meta): void {
@@ -31,17 +31,17 @@ $status = static function (int $storeId, array $channel) use ($escaper, $badge, 
         <?php $badge($setting); ?>
         <?php $meta($setting); ?>
         <progress data-role="sync-progress"
-                  aria-label="<?= $escaper->escapeHtmlAttr(string: __('Synchronization progress')) ?>"
+                  aria-label="<?= $escaper->escapeHtmlAttr(__('Synchronization progress')) ?>"
                   <?= $running ? '' : 'hidden' ?>></progress>
         <p data-role="sync-message" <?= empty($message) ? 'hidden' : '' ?>>
-            <?= $escaper->escapeHtml(data: $message) ?>
+            <?= $escaper->escapeHtml($message) ?>
         </p>
         <p class="message message-error" data-role="failed-row" <?= $channel['failures'] ? '' : 'hidden' ?>>
-            <?= $escaper->escapeHtml(data: __('Failed background jobs:')) ?>
+            <?= $escaper->escapeHtml(__('Failed background jobs:')) ?>
             <span data-role="failed-jobs"><?= (int) $channel['failures'] ?></span>
         </p>
         <div class="message message-warning" data-role="worker-warning" <?= $channel['stalled'] ? '' : 'hidden' ?>>
-            <?= $escaper->escapeHtml(data: __('The worker is not running. Start it on the server:')) ?>
+            <?= $escaper->escapeHtml(__('The worker is not running. Start it on the server:')) ?>
             <code>php bin/magento agent001:work</code>
         </div>
     </div>
@@ -50,29 +50,29 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
     $selected = $channel['setting']['categories'] ?? [];
     $all = empty($selected); ?>
     <fieldset class="agent001-catalog" data-role="category-group">
-        <legend><?= $escaper->escapeHtml(data: $block->storeLabel(storeId: $storeId)) ?></legend>
+        <legend><?= $escaper->escapeHtml($block->storeLabel(storeId: $storeId)) ?></legend>
         <input type="hidden" name="catalog[]" value="<?= (int) $storeId ?>">
         <div class="agent001-chips"
              data-role="category-summary"
-             data-all="<?= $escaper->escapeHtmlAttr(string: __('All categories (entire catalog)')) ?>"
-             data-empty="<?= $escaper->escapeHtmlAttr(string: __('No category selected')) ?>"
-             data-remove="<?= $escaper->escapeHtmlAttr(string: __('Remove')) ?>"
+             data-all="<?= $escaper->escapeHtmlAttr(__('All categories (entire catalog)')) ?>"
+             data-empty="<?= $escaper->escapeHtmlAttr(__('No category selected')) ?>"
+             data-remove="<?= $escaper->escapeHtmlAttr(__('Remove')) ?>"
              aria-live="polite"></div>
         <div class="agent001-picker">
             <input type="search"
                    data-role="category-search"
-                   placeholder="<?= $escaper->escapeHtmlAttr(string: __('Search categories')) ?>"
-                   aria-label="<?= $escaper->escapeHtmlAttr(string: __('Search categories')) ?>">
+                   placeholder="<?= $escaper->escapeHtmlAttr(__('Search categories')) ?>"
+                   aria-label="<?= $escaper->escapeHtmlAttr(__('Search categories')) ?>">
             <button type="button" class="action-tertiary" data-role="select-all">
-                <?= $escaper->escapeHtml(data: __('Select all')) ?>
+                <?= $escaper->escapeHtml(__('Select all')) ?>
             </button>
             <button type="button" class="action-tertiary" data-role="clear-all">
-                <?= $escaper->escapeHtml(data: __('Clear')) ?>
+                <?= $escaper->escapeHtml(__('Clear')) ?>
             </button>
             <select id="agent001-categories-<?= (int) $storeId ?>"
                     class="admin__control-multiselect"
                     name="categories[<?= (int) $storeId ?>][]"
-                    aria-label="<?= $escaper->escapeHtmlAttr(string: __('Categories')) ?>"
+                    aria-label="<?= $escaper->escapeHtmlAttr(__('Categories')) ?>"
                     multiple
                     size="10"
                     data-role="category-select">
@@ -82,9 +82,9 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                     $indent = str_repeat(string: "\u{2003}", times: max(0, count(value: $category['path']) - 3));
                     ?>
                     <option value="<?= (int) $category['id'] ?>"
-                            data-label="<?= $escaper->escapeHtmlAttr(string: $category['name']) ?>"
+                            data-label="<?= $escaper->escapeHtmlAttr($category['name']) ?>"
                             <?= $chosen ? 'selected' : '' ?>>
-                        <?= $escaper->escapeHtml(data: $indent . $category['name']) ?>
+                        <?= $escaper->escapeHtml($indent . $category['name']) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -93,25 +93,25 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
     </fieldset>
 <?php };
 ?>
-<div class="agent001-settings" data-mage-init="<?= $escaper->escapeHtmlAttr(string: $block->jsConfig()) ?>">
+<div class="agent001-settings" data-mage-init="<?= $escaper->escapeHtmlAttr($block->jsConfig()) ?>">
     <?php if ($connect === 'success'): ?>
         <div class="message message-success">
-            <?= $escaper->escapeHtml(data: __('Store connected. Assign agents to your store views.')) ?>
+            <?= $escaper->escapeHtml(__('Store connected. Assign agents to your store views.')) ?>
         </div>
     <?php elseif ($connect === 'exchange_failed'): ?>
         <div class="message message-error">
-            <?= $escaper->escapeHtml(data: __('Connection failed. Start the connection again.')) ?>
+            <?= $escaper->escapeHtml(__('Connection failed. Start the connection again.')) ?>
         </div>
     <?php endif; ?>
 
     <?php if ($wizard): ?>
     <section class="agent001-onboarding">
-        <h2><?= $escaper->escapeHtml(data: __('Set up Agent001 for your store')) ?></h2>
-        <ol class="agent001-steps" aria-label="<?= $escaper->escapeHtmlAttr(string: __('Setup progress')) ?>">
+        <h2><?= $escaper->escapeHtml(__('Set up Agent001 for your store')) ?></h2>
+        <ol class="agent001-steps" aria-label="<?= $escaper->escapeHtmlAttr(__('Setup progress')) ?>">
             <?php foreach ($block->steps() as $number => $label): ?>
                 <li class="<?= $number < $step ? 'is-done' : ($number === $step ? 'is-current' : '') ?>"
                     <?= $number === $step ? 'aria-current="step"' : '' ?>>
-                    <?= $escaper->escapeHtml(data: $label) ?>
+                    <?= $escaper->escapeHtml($label) ?>
                 </li>
             <?php endforeach; ?>
         </ol>
@@ -120,25 +120,25 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
 
     <?php if ($wizard && $step === 1): ?>
     <section class="agent001-card agent001-hero">
-        <h2><?= $escaper->escapeHtml(data: __('Connect this store to Agent001')) ?></h2>
+        <h2><?= $escaper->escapeHtml(__('Connect this store to Agent001')) ?></h2>
         <p>
             <?= $escaper->escapeHtml(
-                data: __('An AI assistant answers your customers\' questions about products and orders.')
+                __('An AI assistant answers your customers\' questions about products and orders.')
             ) ?>
         </p>
         <?= $block->formStartHtml() ?>
             <button class="action-primary" name="operation" value="connect">
-                <?= $escaper->escapeHtml(data: __('Connect now')) ?>
+                <?= $escaper->escapeHtml(__('Connect now')) ?>
             </button>
         </form>
         <p class="agent001-muted">
             <?= $escaper->escapeHtml(
-                data: __('Only your store URL is shared. Products are sent when you start synchronization.')
+                __('Only your store URL is shared. Products are sent when you start synchronization.')
             ) ?>
         </p>
         <p>
-            <a href="<?= $escaper->escapeUrl(string: $block->backendUrl()) ?>" target="_blank" rel="noopener noreferrer">
-                <?= $escaper->escapeHtml(data: __('No account yet? Create one')) ?>
+            <a href="<?= $escaper->escapeUrl($block->backendUrl()) ?>" target="_blank" rel="noopener noreferrer">
+                <?= $escaper->escapeHtml(__('No account yet? Create one')) ?>
             </a>
         </p>
     </section>
@@ -148,10 +148,10 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
             <span class="agent001-dot <?= $connected ? 'is-on' : '' ?>" aria-hidden="true"></span>
             <strong>
                 <?= $escaper->escapeHtml(
-                    data: $connected ? ($installation['account_name'] ?? __('Connected')) : __('Not connected')
+                    $connected ? ($installation['account_name'] ?? __('Connected')) : __('Not connected')
                 ) ?>
             </strong>
-            <span class="agent001-muted"><?= $escaper->escapeHtml(data: $installation['site'] ?? '') ?></span>
+            <span class="agent001-muted"><?= $escaper->escapeHtml($installation['site'] ?? '') ?></span>
         </div>
         <?= $block->formStartHtml() ?>
             <?php if ($connected): ?>
@@ -159,8 +159,8 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                 <button class="action-secondary"
                         name="operation"
                         value="connect"
-                        data-confirm="<?= $escaper->escapeHtmlAttr(string: $confirm) ?>">
-                    <?= $escaper->escapeHtml(data: __('Reconnect')) ?>
+                        data-confirm="<?= $escaper->escapeHtmlAttr($confirm) ?>">
+                    <?= $escaper->escapeHtml(__('Reconnect')) ?>
                 </button>
                 <?php
                 $confirm = __('Disconnect the store? Catalogs of all store views are removed from Agent001 and the chat disappears until you connect again.');
@@ -168,12 +168,12 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                 <button class="action-tertiary"
                         name="operation"
                         value="disconnect"
-                        data-confirm="<?= $escaper->escapeHtmlAttr(string: $confirm) ?>">
-                    <?= $escaper->escapeHtml(data: __('Disconnect')) ?>
+                        data-confirm="<?= $escaper->escapeHtmlAttr($confirm) ?>">
+                    <?= $escaper->escapeHtml(__('Disconnect')) ?>
                 </button>
             <?php else: ?>
                 <button class="action-primary" name="operation" value="connect">
-                    <?= $escaper->escapeHtml(data: __('Connect')) ?>
+                    <?= $escaper->escapeHtml(__('Connect')) ?>
                 </button>
             <?php endif; ?>
         </form>
@@ -183,37 +183,37 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
     <?php if ($connected && (!$wizard || $view === 2)): ?>
     <section class="agent001-card">
         <div class="agent001-head">
-            <h2><?= $escaper->escapeHtml(data: $wizard ? __('Choose agents') : __('Store views')) ?></h2>
-            <a href="<?= $escaper->escapeUrl(string: $block->refreshUrl()) ?>">
-                <?= $escaper->escapeHtml(data: __('Refresh list')) ?>
+            <h2><?= $escaper->escapeHtml($wizard ? __('Choose agents') : __('Store views')) ?></h2>
+            <a href="<?= $escaper->escapeUrl($block->refreshUrl()) ?>">
+                <?= $escaper->escapeHtml(__('Refresh list')) ?>
             </a>
         </div>
         <?php if ($wizard): ?>
             <p class="agent001-muted">
-                <?= $escaper->escapeHtml(data: __('One agent per store view. Choose "No agent" to keep the chat off.')) ?>
+                <?= $escaper->escapeHtml(__('One agent per store view. Choose "No agent" to keep the chat off.')) ?>
             </p>
         <?php endif; ?>
         <?php if ($failed): ?>
             <p class="message message-warning">
                 <?= $escaper->escapeHtml(
-                    data: __('No agents could be loaded. Check your Agent001 account and try again.')
+                    __('No agents could be loaded. Check your Agent001 account and try again.')
                 ) ?>
             </p>
         <?php elseif (empty($agents)): ?>
             <p class="message message-notice">
                 <?= $escaper->escapeHtml(
-                    data: __('Your Agent001 account has no agents yet. Create one, then refresh the list.')
+                    __('Your Agent001 account has no agents yet. Create one, then refresh the list.')
                 ) ?>
             </p>
         <?php endif; ?>
         <?= $block->formStartHtml() ?>
             <table class="data-grid agent001-channels">
                 <thead><tr>
-                    <th><?= $escaper->escapeHtml(data: __('Store view')) ?></th>
-                    <th><?= $escaper->escapeHtml(data: __('Agent')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Store view')) ?></th>
+                    <th><?= $escaper->escapeHtml(__('Agent')) ?></th>
                     <?php if (!$wizard): ?>
-                        <th><?= $escaper->escapeHtml(data: __('Chat')) ?></th>
-                        <th><?= $escaper->escapeHtml(data: __('Synchronization')) ?></th>
+                        <th><?= $escaper->escapeHtml(__('Chat')) ?></th>
+                        <th><?= $escaper->escapeHtml(__('Synchronization')) ?></th>
                     <?php endif; ?>
                 </tr></thead>
                 <tbody>
@@ -225,23 +225,23 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                     <tr data-store="<?= (int) $storeId ?>">
                         <td>
                             <label for="agent001-agent-<?= (int) $storeId ?>">
-                                <?= $escaper->escapeHtml(data: $block->storeLabel(storeId: $storeId)) ?>
+                                <?= $escaper->escapeHtml($block->storeLabel(storeId: $storeId)) ?>
                             </label>
-                            <small class="agent001-muted"><?= $escaper->escapeHtml(data: $channel['website']) ?></small>
+                            <small class="agent001-muted"><?= $escaper->escapeHtml($channel['website']) ?></small>
                         </td>
                         <td>
                             <?php if ($failed): ?>
                                 <?= $escaper->escapeHtml(
-                                    data: !empty($chosen) ? $block->agentName(id: $chosen) : __('No agent')
+                                    !empty($chosen) ? $block->agentName(id: $chosen) : __('No agent')
                                 ) ?>
                             <?php else: ?>
                                 <select id="agent001-agent-<?= (int) $storeId ?>"
                                         class="admin__control-select"
                                         name="agent[<?= (int) $storeId ?>]">
-                                    <option value=""><?= $escaper->escapeHtml(data: __('No agent')) ?></option>
+                                    <option value=""><?= $escaper->escapeHtml(__('No agent')) ?></option>
                                     <?php if (!empty($chosen) && $block->agentName(id: $chosen) === $chosen): ?>
-                                        <option value="<?= $escaper->escapeHtmlAttr(string: $chosen) ?>" selected>
-                                            <?= $escaper->escapeHtml(data: $chosen) ?>
+                                        <option value="<?= $escaper->escapeHtmlAttr($chosen) ?>" selected>
+                                            <?= $escaper->escapeHtml($chosen) ?>
                                         </option>
                                     <?php endif; ?>
                                     <?php foreach ($agents as $agent): ?>
@@ -250,27 +250,27 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                                             ? null
                                             : $block->agentOwner(agent: $agent, storeId: $storeId);
                                         ?>
-                                        <option value="<?= $escaper->escapeHtmlAttr(string: $agent->id) ?>"
+                                        <option value="<?= $escaper->escapeHtmlAttr($agent->id) ?>"
                                                 <?= $chosen === $agent->id ? 'selected' : '' ?>
                                                 <?= $owner ? 'disabled' : '' ?>>
                                             <?= $escaper->escapeHtml(
-                                                data: $owner ? $agent->name . ' (' . $owner . ')' : $agent->name
+                                                $owner ? $agent->name . ' (' . $owner . ')' : $agent->name
                                             ) ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                                 <a class="agent001-small"
-                                   href="<?= $escaper->escapeUrl(string: $block->createAgentUrl(storeId: $storeId)) ?>"
+                                   href="<?= $escaper->escapeUrl($block->createAgentUrl(storeId: $storeId)) ?>"
                                    target="_blank"
                                    rel="noopener noreferrer">
-                                    <?= $escaper->escapeHtml(data: __('New agent')) ?>
+                                    <?= $escaper->escapeHtml(__('New agent')) ?>
                                 </a>
                             <?php endif; ?>
                         </td>
                         <?php if (!$wizard): ?>
                             <td>
                                 <span class="agent001-badge" data-status="<?= $channel['live'] ? 'success' : 'idle' ?>">
-                                    <?= $escaper->escapeHtml(data: $channel['live'] ? __('Live') : __('Off')) ?>
+                                    <?= $escaper->escapeHtml($channel['live'] ? __('Live') : __('Off')) ?>
                                 </span>
                                 <?php if (!empty($setting['agent_id'])): ?>
                                     <?php
@@ -285,7 +285,7 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                                             value="toggle"
                                             <?= $block->confirmHtml(message: $confirm) ?>>
                                         <?= $escaper->escapeHtml(
-                                            data: $active ? __('Disable agent') : __('Enable agent')
+                                            $active ? __('Disable agent') : __('Enable agent')
                                         ) ?>
                                     </button>
                                 <?php endif; ?>
@@ -313,7 +313,7 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                         name="operation"
                         value="agents"
                         <?= $block->confirmHtml(message: $confirm) ?>>
-                    <?= $escaper->escapeHtml(data: $wizard ? __('Save and continue') : __('Save agents')) ?>
+                    <?= $escaper->escapeHtml($wizard ? __('Save and continue') : __('Save agents')) ?>
                 </button>
             <?php endif; ?>
         </form>
@@ -329,10 +329,10 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
 
     <?php if ($connected && $wizard && $view === 3): ?>
     <section class="agent001-card">
-        <h2><?= $escaper->escapeHtml(data: __('Synchronize your catalog')) ?></h2>
+        <h2><?= $escaper->escapeHtml(__('Synchronize your catalog')) ?></h2>
         <p class="agent001-muted">
             <?= $escaper->escapeHtml(
-                data: __('Choose the categories to send. Without a selection the entire catalog is sent.')
+                __('Choose the categories to send. Without a selection the entire catalog is sent.')
             ) ?>
         </p>
         <?= $block->formStartHtml() ?>
@@ -340,11 +340,11 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                 <?php $catalog($storeId, $channel); ?>
             <?php endforeach; ?>
             <div class="agent001-actions">
-                <a class="action-secondary" href="<?= $escaper->escapeUrl(string: $block->stepUrl(step: 2)) ?>">
-                    <?= $escaper->escapeHtml(data: __('Back')) ?>
+                <a class="action-secondary" href="<?= $escaper->escapeUrl($block->stepUrl(step: 2)) ?>">
+                    <?= $escaper->escapeHtml(__('Back')) ?>
                 </a>
                 <button class="action-primary" name="operation" value="catalog">
-                    <?= $escaper->escapeHtml(data: __('Synchronize catalog')) ?>
+                    <?= $escaper->escapeHtml(__('Synchronize catalog')) ?>
                 </button>
             </div>
         </form>
@@ -353,28 +353,28 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
 
     <?php if ($connected && $wizard && $view === 4): ?>
     <section class="agent001-card">
-        <h2><?= $escaper->escapeHtml(data: __('Check the chat in your store')) ?></h2>
+        <h2><?= $escaper->escapeHtml(__('Check the chat in your store')) ?></h2>
         <p class="agent001-muted">
             <?= $escaper->escapeHtml(
-                data: __('Your catalog is synchronized. Open each store view and check that the chat appears.')
+                __('Your catalog is synchronized. Open each store view and check that the chat appears.')
             ) ?>
         </p>
         <ul class="agent001-links">
             <?php foreach ($assigned as $storeId => $channel): ?>
                 <li>
-                    <a href="<?= $escaper->escapeUrl(string: (string) ($channel['setting']['site'] ?? '')) ?>"
+                    <a href="<?= $escaper->escapeUrl((string) ($channel['setting']['site'] ?? '')) ?>"
                        target="_blank"
                        rel="noopener noreferrer">
-                        <?= $escaper->escapeHtml(data: __('Open %1 (opens in a new tab)', $channel['name'])) ?>
+                        <?= $escaper->escapeHtml(__('Open %1 (opens in a new tab)', $channel['name'])) ?>
                     </a>
                     <?php if (empty($channel['setting']['active'])): ?>
                         <?= $block->formStartHtml() ?>
                             <input type="hidden" name="store" value="<?= (int) $storeId ?>">
                             <span class="message message-warning">
-                                <?= $escaper->escapeHtml(data: __('The agent is disabled, so the chat is hidden.')) ?>
+                                <?= $escaper->escapeHtml(__('The agent is disabled, so the chat is hidden.')) ?>
                             </span>
                             <button class="action-secondary" name="operation" value="toggle">
-                                <?= $escaper->escapeHtml(data: __('Enable agent')) ?>
+                                <?= $escaper->escapeHtml(__('Enable agent')) ?>
                             </button>
                         </form>
                     <?php endif; ?>
@@ -382,11 +382,11 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
             <?php endforeach; ?>
         </ul>
         <p class="agent001-muted">
-            <?= $escaper->escapeHtml(data: __('Chat not visible? If you use Varnish or a CDN, clear its cache.')) ?>
+            <?= $escaper->escapeHtml(__('Chat not visible? If you use Varnish or a CDN, clear its cache.')) ?>
         </p>
         <?= $block->formStartHtml() ?>
             <button class="action-primary" name="operation" value="onboarding_finish">
-                <?= $escaper->escapeHtml(data: __('Finish setup')) ?>
+                <?= $escaper->escapeHtml(__('Finish setup')) ?>
             </button>
         </form>
     </section>
@@ -395,20 +395,20 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
     <?php if ($connected && !$wizard): ?>
         <?php foreach ($assigned as $storeId => $channel): ?>
         <details class="agent001-card agent001-channel">
-            <summary><?= $escaper->escapeHtml(data: $block->storeLabel(storeId: $storeId)) ?></summary>
+            <summary><?= $escaper->escapeHtml($block->storeLabel(storeId: $storeId)) ?></summary>
             <?php if (!empty($channel['setting']['site'])): ?>
                 <p>
-                    <a href="<?= $escaper->escapeUrl(string: (string) $channel['setting']['site']) ?>"
+                    <a href="<?= $escaper->escapeUrl((string) $channel['setting']['site']) ?>"
                        target="_blank"
                        rel="noopener noreferrer">
-                        <?= $escaper->escapeHtml(data: __('Open store (opens in a new tab)')) ?>
+                        <?= $escaper->escapeHtml(__('Open store (opens in a new tab)')) ?>
                     </a>
                 </p>
             <?php endif; ?>
             <?= $block->formStartHtml() ?>
                 <?php $catalog($storeId, $channel); ?>
                 <button class="action-primary" name="operation" value="catalog">
-                    <?= $escaper->escapeHtml(data: __('Synchronize catalog')) ?>
+                    <?= $escaper->escapeHtml(__('Synchronize catalog')) ?>
                 </button>
             </form>
         </details>

@@ -26,7 +26,7 @@ class ProductChanged implements ObserverInterface
             return;
         }
         $id = (int) $product->getId();
-        $ids = [$id, ...$this->parents->getParentIdsByChild(childId: $id)];
+        $ids = [$id, ...$this->parents->getParentIdsByChild($id)];
         foreach ($this->settings->connected() as $storeId => $setting) {
             if (empty($setting['agent_id'])) {
                 continue;

@@ -24,6 +24,8 @@ class Client
         ?array $data = null,
         array $headers = [],
         string $channel = '',
+        int $attempts = 3,
+        int $timeout = 30,
     ): array {
         $headers = ['Accept' => 'application/json', 'Content-Type' => 'application/json',
             'User-Agent' => 'Agent001-Magento/' . self::VERSION] + $headers;
@@ -39,15 +41,21 @@ class Client
         }
         $url = $this->config->baseUrl(internal: true) . $path;
         $status = 0;
-        for ($attempt = 0; $attempt < 3; ++$attempt) {
-            [$status, $response] = $this->send(method: $method, url: $url, headers: $headers, body: $body);
+        for ($attempt = 0; $attempt < $attempts; ++$attempt) {
+            [$status, $response] = $this->send(
+                method: $method,
+                url: $url,
+                headers: $headers,
+                body: $body,
+                timeout: $timeout,
+            );
             if ($status >= 200 && $status < 300) {
                 return $this->decode(response: $response);
             }
             if ($status > 0 && $status < 500 && $status !== 429) {
                 break;
             }
-            if ($attempt < 2) {
+            if ($attempt < $attempts - 1) {
                 usleep(microseconds: 500000 * (2 ** $attempt));
             }
         }
@@ -58,22 +66,22 @@ class Client
      * @param array<string, string> $headers
      * @return array{int, string}
      */
-    private function send(string $method, string $url, array $headers, string $body): array
+    private function send(string $method, string $url, array $headers, string $body, int $timeout): array
     {
         $curl = $this->curlFactory->create();
-        $curl->setHeaders(headers: $headers);
-        $curl->setTimeout(value: 30);
-        $curl->setOptions(arr: [
-            CURLOPT_CONNECTTIMEOUT => 10,
+        $curl->setHeaders($headers);
+        $curl->setTimeout($timeout);
+        $curl->setOptions([
+            CURLOPT_CONNECTTIMEOUT => min(10, $timeout),
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_PROTOCOLS => CURLPROTO_HTTPS | CURLPROTO_HTTP,
         ]);
         try {
             if ($method === 'GET') {
-                $curl->get(uri: $url);
+                $curl->get($url);
             } else {
-                $curl->setOption(name: CURLOPT_CUSTOMREQUEST, value: $method);
-                $curl->post(uri: $url, params: $body);
+                $curl->setOption(CURLOPT_CUSTOMREQUEST, $method);
+                $curl->post($url, $body);
             }
         } catch (Exception) {
             return [0, ''];

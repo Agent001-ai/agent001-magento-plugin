@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="agent001">
+        <job name="agent001_work" instance="Agent001\Assistant\Cron\Work" method="execute"><schedule>* * * * *</schedule></job>
+        <job name="agent001_nightly" instance="Agent001\Assistant\Cron\Nightly" method="execute"><schedule>0 * * * *</schedule></job>
+    </group>
+</config>

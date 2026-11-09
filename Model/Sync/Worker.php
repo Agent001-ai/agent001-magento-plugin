@@ -33,7 +33,7 @@ class Worker
         foreach ($this->queue->pending(limit: $limit) as $job) {
             $storeId = (int) $job['store_id'];
             $lock = 'agent001_store_' . $storeId;
-            if (!$this->locks->lock(name: $lock, timeout: 0)) {
+            if (!$this->locks->lock($lock, 0)) {
                 continue;
             }
             try {
@@ -62,7 +62,7 @@ class Worker
                     $this->queue->defer(job: $job, seconds: 60);
                     continue;
                 }
-                $this->emulation->startEnvironmentEmulation(storeId: $storeId, area: 'frontend', force: true);
+                $this->emulation->startEnvironmentEmulation($storeId, 'frontend', true);
                 try {
                     $done = true;
                     if ($job['kind'] === 'full') {
@@ -82,8 +82,9 @@ class Worker
                 }
                 ++$processed;
             } catch (Throwable $error) {
-                $this->logger->error(message: 'Agent001 background operation failed.', context: [
+                $this->logger->error('Agent001 background operation failed.', [
                     'store_id' => $storeId, 'kind' => $job['kind'], 'exception_class' => $error::class,
+                    'message' => $error->getMessage(),
                 ]);
                 $this->queue->defer(job: $job, seconds: min(3600, 30 * (2 ** (int) $job['attempts'])), failed: true);
                 if ($job['kind'] !== 'product') {
@@ -96,7 +97,8 @@ class Worker
                     $this->settings->save(storeId: $storeId, data: $setting);
                 }
             } finally {
-                $this->locks->unlock(name: $lock);
+                $this->stock->reset();
+                $this->locks->unlock($lock);
             }
         }
         return $processed;

@@ -15,6 +15,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Work extends Command
 {
+    private const MEMORY_LIMIT = 536870912;
+
     public function __construct(
         private readonly Worker $worker,
         private readonly State $state,
@@ -25,13 +27,16 @@ class Work extends Command
 
     protected function configure(): void
     {
-        $this->setName(name: 'agent001:work')->setDescription(description: 'Process the durable Agent001 queue.');
+        $this->setName('agent001:work')->setDescription('Process the durable Agent001 queue.');
+        $this->addOption('retry-failed', null, InputOption::VALUE_NONE, 'Retry retained failed jobs.');
+        $this->addOption('once', null, InputOption::VALUE_NONE, 'Process one page and exit.');
         $this->addOption(
-            name: 'retry-failed',
-            mode: InputOption::VALUE_NONE,
-            description: 'Retry retained failed jobs.',
+            'max-time',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Exit after this many seconds so the process manager restarts the worker.',
+            '3600',
         );
-        $this->addOption(name: 'once', mode: InputOption::VALUE_NONE, description: 'Process one page and exit.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -39,19 +44,21 @@ class Work extends Command
         try {
             $this->state->getAreaCode();
         } catch (LocalizedException) {
-            $this->state->setAreaCode(code: 'crontab');
+            $this->state->setAreaCode('crontab');
         }
-        if ($input->getOption(name: 'retry-failed')) {
+        if ($input->getOption('retry-failed')) {
             $this->queue->retryFailed();
         }
-        $once = (bool) $input->getOption(name: 'once');
+        $once = (bool) $input->getOption('once');
+        $deadline = time() + max(1, (int) $input->getOption('max-time'));
         do {
             $count = $this->worker->run();
-            if (!$once) {
+            $expired = time() >= $deadline || memory_get_usage(real_usage: true) > self::MEMORY_LIMIT;
+            if (!$once && !$expired) {
                 sleep(seconds: $count ? 1 : 5);
             }
-        } while (!$once);
-        $output->writeln(messages: 'Agent001 queue page processed.');
+        } while (!$once && !$expired);
+        $output->writeln('Agent001 queue page processed.');
         return Command::SUCCESS;
     }
 }

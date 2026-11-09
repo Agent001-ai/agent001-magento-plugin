@@ -7,6 +7,7 @@ namespace Agent001\Assistant\Model\Catalog;
 use InvalidArgumentException;
 use Magento\Catalog\Model\Product;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
+use Magento\CatalogInventory\Model\StockRegistryStorage;
 use Magento\Framework\Indexer\IndexerRegistry;
 use Magento\Framework\Module\Manager as ModuleManager;
 use Magento\Framework\ObjectManagerInterface;
@@ -24,13 +25,19 @@ class Stock
         private readonly ObjectManagerInterface $objects,
         private readonly StockRegistryInterface $registry,
         private readonly IndexerRegistry $indexers,
+        private readonly StockRegistryStorage $storage,
     ) {
+    }
+
+    public function reset(): void
+    {
+        $this->storage->clean();
     }
 
     public function indexing(): bool
     {
         try {
-            $indexer = $this->indexers->get(indexerId: $this->msi() ? 'inventory' : 'cataloginventory_stock');
+            $indexer = $this->indexers->get($this->msi() ? 'inventory' : 'cataloginventory_stock');
         } catch (InvalidArgumentException) {
             return false;
         }
@@ -38,7 +45,7 @@ class Stock
             return false;
         }
         $view = $indexer->getView();
-        $state = $view->getState()->loadByView(viewId: $view->getId());
+        $state = $view->getState()->loadByView($view->getId());
         return (int) $view->getChangelog()->getVersion() > (int) $state->getVersionId();
     }
 
@@ -58,12 +65,12 @@ class Stock
             return $this->objects->get(IsProductSalableInterface::class)
                 ->execute((string) $product->getSku(), $stockId);
         }
-        return (int) $this->registry->getStockStatus(productId: (int) $product->getId())->getStockStatus() === 1;
+        return (int) $this->registry->getStockStatus((int) $product->getId())->getStockStatus() === 1;
     }
 
     public function quantity(Product $product, int $stockId, int $websiteId): ?float
     {
-        $item = $this->registry->getStockItem(productId: (int) $product->getId(), scopeId: $websiteId);
+        $item = $this->registry->getStockItem((int) $product->getId(), $websiteId);
         if (!$item->getManageStock()) {
             return null;
         }

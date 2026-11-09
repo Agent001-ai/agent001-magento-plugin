@@ -42,31 +42,31 @@ class Save extends Action implements HttpPostActionInterface
         private readonly LockManagerInterface $locks,
         private readonly LoggerInterface $logger,
     ) {
-        parent::__construct(context: $context);
+        parent::__construct($context);
     }
 
     public function execute()
     {
         $redirect = $this->resultRedirectFactory->create();
-        $redirect->setPath(path: 'agent001/settings/index');
-        if (!$this->formKey->validate(request: $this->getRequest())) {
-            $this->messageManager->addErrorMessage(message: __('Invalid form key. Reload the page.'));
+        $redirect->setPath('agent001/settings/index');
+        if (!$this->formKey->validate($this->getRequest())) {
+            $this->messageManager->addErrorMessage(__('Invalid form key. Reload the page.'));
             return $redirect;
         }
         $locked = [];
         try {
-            $operation = $this->getRequest()->getParam(key: 'operation');
+            $operation = $this->getRequest()->getParam('operation');
             $targets = $this->targets(operation: $operation);
             foreach ($targets as $storeId) {
-                if (!$this->locks->lock(name: 'agent001_store_' . $storeId, timeout: 0)) {
-                    throw new LocalizedException(phrase: __('Synchronization is running. Try again later.'));
+                if (!$this->locks->lock('agent001_store_' . $storeId, 0)) {
+                    throw new LocalizedException(__('Synchronization is running. Try again later.'));
                 }
                 $locked[] = $storeId;
             }
             if ($operation === 'connect') {
-                $settingsUrl = $this->getUrl(route: 'agent001/settings/index');
+                $settingsUrl = $this->getUrl('agent001/settings/index');
                 $url = $this->connection->start(storeId: $this->channels->defaultId(), settingsUrl: $settingsUrl);
-                return $redirect->setUrl(url: $url);
+                return $redirect->setUrl($url);
             }
             if ($operation === 'disconnect') {
                 $this->connection->disconnectAll();
@@ -74,37 +74,37 @@ class Save extends Action implements HttpPostActionInterface
             } elseif ($operation === 'onboarding_finish') {
                 if ($this->progress()['step'] < Onboarding::STEPS) {
                     throw new LocalizedException(
-                        phrase: __('Complete the first synchronization before finishing setup.'),
+                        __('Complete the first synchronization before finishing setup.'),
                     );
                 }
                 $this->onboarding->finish();
             } else {
                 $apiKey = $this->settings->apiKey();
                 if (empty($apiKey)) {
-                    throw new LocalizedException(phrase: __('Connect the store first.'));
+                    throw new LocalizedException(__('Connect the store first.'));
                 }
                 match ($operation) {
                     'agents' => $this->assignAgents(apiKey: $apiKey),
                     'toggle' => $this->toggle(apiKey: $apiKey, storeId: $targets[0]),
                     'catalog' => $this->synchronize(storeIds: $targets),
-                    default => throw new LocalizedException(phrase: __('Invalid operation.')),
+                    default => throw new LocalizedException(__('Invalid operation.')),
                 };
             }
             $this->progress();
-            $this->messageManager->addSuccessMessage(message: __('Settings saved.'));
+            $this->messageManager->addSuccessMessage(__('Settings saved.'));
         } catch (LocalizedException $error) {
-            $this->messageManager->addErrorMessage(message: $error->getMessage());
+            $this->messageManager->addErrorMessage($error->getMessage());
         } catch (Throwable $error) {
             $this->logger->error(
-                message: 'Agent001 admin operation failed.',
-                context: ['exception_class' => $error::class],
+                'Agent001 admin operation failed.',
+                ['exception_class' => $error::class],
             );
             $this->messageManager->addErrorMessage(
-                message: __('The operation failed. Check the connection and store host.'),
+                __('The operation failed. Check the connection and store host.'),
             );
         } finally {
             foreach ($locked as $storeId) {
-                $this->locks->unlock(name: 'agent001_store_' . $storeId);
+                $this->locks->unlock('agent001_store_' . $storeId);
             }
         }
         return $redirect;
@@ -117,12 +117,12 @@ class Save extends Action implements HttpPostActionInterface
     {
         $request = $this->getRequest();
         if ($operation === 'toggle') {
-            return [$this->channels->id(value: $request->getParam(key: 'store'))];
+            return [$this->channels->id(value: $request->getParam('store'))];
         }
         if ($operation === 'catalog') {
-            $posted = $request->getParam(key: 'catalog', default: []);
+            $posted = $request->getParam('catalog', []);
             if (!is_array(value: $posted) || empty($posted)) {
-                throw new LocalizedException(phrase: __('Select an active store view.'));
+                throw new LocalizedException(__('Select an active store view.'));
             }
             return array_values(array: array_unique(array: array_map(
                 callback: fn (mixed $id): int => $this->channels->id(value: $id),
@@ -133,7 +133,7 @@ class Save extends Action implements HttpPostActionInterface
             return array_keys(array: $this->channels->stores());
         }
         if ($operation === 'agents') {
-            $picked = $request->getParam(key: 'agent', default: []);
+            $picked = $request->getParam('agent', []);
             $picked = is_array(value: $picked) ? $picked : [];
             return array_keys(array: array_filter(
                 array: $this->channels->settings(),
@@ -147,24 +147,24 @@ class Save extends Action implements HttpPostActionInterface
 
     private function assignAgents(string $apiKey): void
     {
-        $picked = $this->getRequest()->getParam(key: 'agent', default: []);
+        $picked = $this->getRequest()->getParam('agent', []);
         if (!is_array(value: $picked)) {
-            throw new LocalizedException(phrase: __('Select an agent.'));
+            throw new LocalizedException(__('Select an agent.'));
         }
         $choices = [];
         foreach (array_keys(array: $this->channels->stores()) as $storeId) {
             $id = $picked[$storeId] ?? '';
             if (!is_string(value: $id) || (!empty($id) && !preg_match(pattern: AgentDTO::UUID, subject: $id))) {
-                throw new LocalizedException(phrase: __('Select an agent.'));
+                throw new LocalizedException(__('Select an agent.'));
             }
             $choices[$storeId] = $id;
         }
         $chosen = array_filter(array: $choices);
         if (empty($chosen)) {
-            throw new LocalizedException(phrase: __('Assign an agent to at least one store view.'));
+            throw new LocalizedException(__('Assign an agent to at least one store view.'));
         }
         if (count(value: array_unique(array: $chosen)) !== count(value: $chosen)) {
-            throw new LocalizedException(phrase: __('Each agent can serve only one store view.'));
+            throw new LocalizedException(__('Each agent can serve only one store view.'));
         }
         uasort(
             array: $choices,
@@ -215,7 +215,7 @@ class Save extends Action implements HttpPostActionInterface
     {
         $setting = $this->settings->get(storeId: $storeId);
         if (empty($setting['agent_id'])) {
-            throw new LocalizedException(phrase: __('Select an agent.'));
+            throw new LocalizedException(__('Select an agent.'));
         }
         $active = empty($setting['active']);
         $this->agents->toggle(apiKey: $apiKey, channel: $setting['channel'], id: $setting['agent_id'], active: $active);
@@ -232,7 +232,7 @@ class Save extends Action implements HttpPostActionInterface
         foreach ($storeIds as $storeId) {
             $setting = $this->settings->get(storeId: $storeId);
             if (empty($setting['agent_id'])) {
-                throw new LocalizedException(phrase: __('Select an agent.'));
+                throw new LocalizedException(__('Select an agent.'));
             }
             $categories = $this->selectedCategories(storeId: $storeId);
             $changed = $categories !== ($setting['categories'] ?? []);
@@ -252,7 +252,7 @@ class Save extends Action implements HttpPostActionInterface
             $this->settings->save(storeId: $storeId, data: $setting, invalidate: true);
         }
         if (!$queued) {
-            throw new LocalizedException(phrase: __('Synchronization is running. Try again later.'));
+            throw new LocalizedException(__('Synchronization is running. Try again later.'));
         }
     }
 
@@ -266,23 +266,23 @@ class Save extends Action implements HttpPostActionInterface
 
     private function selectedCategories(int $storeId): array
     {
-        $posted = $this->getRequest()->getParam(key: 'categories', default: []);
+        $posted = $this->getRequest()->getParam('categories', []);
         $ids = is_array(value: $posted) ? ($posted[$storeId] ?? []) : null;
         if (!is_array(value: $ids) || count(value: $ids) > 10000) {
-            throw new LocalizedException(phrase: __('Invalid categories.'));
+            throw new LocalizedException(__('Invalid categories.'));
         }
         $available = $this->categories->all(storeId: $storeId);
         $selected = [];
         foreach ($ids as $id) {
             if (!is_scalar(value: $id) || !ctype_digit(text: (string) $id) || !isset($available[(int) $id])) {
-                throw new LocalizedException(phrase: __('Invalid categories.'));
+                throw new LocalizedException(__('Invalid categories.'));
             }
             $selected[] = (int) $id;
         }
         $selected = array_values(array: array_unique(array: $selected));
         if (empty($selected)) {
             $name = $this->channels->stores()[$storeId]->getName();
-            throw new LocalizedException(phrase: __('Select at least one category for %1.', $name));
+            throw new LocalizedException(__('Select at least one category for %1.', $name));
         }
         return count(value: $selected) === count(value: $available) ? [] : $selected;
     }
