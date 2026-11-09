@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments><argument name="commands" xsi:type="array">
+            <item name="agent001_sync" xsi:type="object">Agent001\Assistant\Console\Command\Sync</item>
+            <item name="agent001_work" xsi:type="object">Agent001\Assistant\Console\Command\Work</item>
+        </argument></arguments>
+    </type>
+    <type name="Agent001\Assistant\Console\Command\Work">
+        <arguments><argument name="worker" xsi:type="object">Agent001\Assistant\Model\Sync\Worker\Proxy</argument></arguments>
+    </type>
+</config>

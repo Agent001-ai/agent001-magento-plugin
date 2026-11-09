@@ -1,0 +1,58 @@
+{
+    "agent001_setting": {
+        "column": {
+            "store_id": true,
+            "data": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "AGENT001_SETTING_STORE_ID_STORE_STORE_ID": true
+        }
+    },
+    "agent001_job": {
+        "column": {
+            "job_key": true,
+            "store_id": true,
+            "kind": true,
+            "product_id": true,
+            "generation": true,
+            "revision": true,
+            "attempts": true,
+            "available_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "AGENT001_JOB_STORE_ID_STORE_STORE_ID": true
+        },
+        "index": {
+            "AGENT001_JOB_AVAILABLE_AT": true
+        }
+    },
+    "agent001_nonce": {
+        "column": {
+            "token_hash": true,
+            "data": true,
+            "expires_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        },
+        "index": {
+            "AGENT001_NONCE_EXPIRES_AT": true
+        }
+    },
+    "agent001_onboarding": {
+        "column": {
+            "store_id": true,
+            "status": true,
+            "step": true,
+            "created_at": true,
+            "updated_at": true,
+            "completed_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "AGENT001_ONBOARDING_STORE_ID_STORE_STORE_ID": true
+        }
+    }
+}

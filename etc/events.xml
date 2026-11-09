@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="catalog_product_save_commit_after"><observer name="agent001_catalog_product_save_commit_after" instance="Agent001\Assistant\Observer\ProductChanged"/></event>
+    <event name="catalog_product_delete_before"><observer name="agent001_catalog_product_delete_before" instance="Agent001\Assistant\Observer\ProductChanged"/></event>
+    <event name="catalog_product_import_bunch_save_after"><observer name="agent001_catalog_product_import_bunch_save_after" instance="Agent001\Assistant\Observer\CatalogChanged"/></event>
+    <event name="catalog_product_import_bunch_delete_after"><observer name="agent001_catalog_product_import_bunch_delete_after" instance="Agent001\Assistant\Observer\CatalogChanged"/></event>
+    <event name="catalog_product_attribute_update_before"><observer name="agent001_catalog_product_attribute_update_before" instance="Agent001\Assistant\Observer\CatalogChanged"/></event>
+    <event name="catalog_category_save_commit_after"><observer name="agent001_catalog_category_save_commit_after" instance="Agent001\Assistant\Observer\CatalogChanged"/></event>
+    <event name="catalog_category_delete_commit_after"><observer name="agent001_catalog_category_delete_commit_after" instance="Agent001\Assistant\Observer\CatalogChanged"/></event>
+</config>
