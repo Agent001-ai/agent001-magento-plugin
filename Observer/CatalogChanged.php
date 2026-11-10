@@ -11,10 +11,19 @@ use Magento\Framework\Event\ObserverInterface;
 
 class CatalogChanged implements ObserverInterface
 {
+    /**
+     * @param Settings $settings
+     * @param Queue $queue
+     */
     public function __construct(private readonly Settings $settings, private readonly Queue $queue)
     {
     }
 
+    /**
+     * Queue a full synchronization after bulk catalog changes.
+     *
+     * @param Observer $observer
+     */
     public function execute(Observer $observer): void
     {
         foreach ($this->settings->connected() as $storeId => $setting) {

@@ -16,6 +16,13 @@ class Index extends Action implements HttpGetActionInterface
 {
     public const ADMIN_RESOURCE = 'Agent001_Assistant::settings';
 
+    /**
+     * @param Context $context
+     * @param PageFactory $pages
+     * @param Channels $channels
+     * @param Settings $settings
+     * @param Onboarding $onboarding
+     */
     public function __construct(
         Context $context,
         private readonly PageFactory $pages,
@@ -26,6 +33,9 @@ class Index extends Action implements HttpGetActionInterface
         parent::__construct($context);
     }
 
+    /**
+     * Render the Agent001 settings page.
+     */
     public function execute()
     {
         $this->onboarding->sync(

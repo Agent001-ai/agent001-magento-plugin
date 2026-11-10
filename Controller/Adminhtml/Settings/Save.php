@@ -7,6 +7,7 @@ namespace Agent001\Assistant\Controller\Adminhtml\Settings;
 use Agent001\Assistant\Model\Catalog\Categories;
 use Agent001\Assistant\Model\Channels;
 use Agent001\Assistant\Model\Client\Agents;
+use Agent001\Assistant\Model\Client\UnauthorizedException;
 use Agent001\Assistant\Model\Client\DTO\AgentDTO;
 use Agent001\Assistant\Model\Config;
 use Agent001\Assistant\Model\Connect\Connection;
@@ -20,6 +21,7 @@ use Magento\Framework\Data\Form\FormKey\Validator;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Lock\LockManagerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 class Save extends Action implements HttpPostActionInterface
@@ -28,6 +30,20 @@ class Save extends Action implements HttpPostActionInterface
 
     private const RUNNING = ['queued', 'reading', 'indexing'];
 
+    /**
+     * @param Context $context
+     * @param Channels $channels
+     * @param Settings $settings
+     * @param Connection $connection
+     * @param Agents $agents
+     * @param Categories $categories
+     * @param Queue $queue
+     * @param Config $config
+     * @param Onboarding $onboarding
+     * @param Validator $formKey
+     * @param LockManagerInterface $locks
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         Context $context,
         private readonly Channels $channels,
@@ -45,6 +61,9 @@ class Save extends Action implements HttpPostActionInterface
         parent::__construct($context);
     }
 
+    /**
+     * Run the requested settings operation.
+     */
     public function execute()
     {
         $redirect = $this->resultRedirectFactory->create();
@@ -53,24 +72,27 @@ class Save extends Action implements HttpPostActionInterface
             $this->messageManager->addErrorMessage(__('Invalid form key. Reload the page.'));
             return $redirect;
         }
-        $locked = [];
+        $lock = '';
         try {
             $operation = $this->getRequest()->getParam('operation');
-            $targets = $this->targets(operation: $operation);
-            foreach ($targets as $storeId) {
-                if (!$this->locks->lock('agent001_store_' . $storeId, 0)) {
-                    throw new LocalizedException(__('Synchronization is running. Try again later.'));
-                }
-                $locked[] = $storeId;
-            }
             if ($operation === 'connect') {
+                if (!empty($this->settings->apiKey())) {
+                    throw new LocalizedException(__('Disconnect the store before connecting again.'));
+                }
                 $settingsUrl = $this->getUrl('agent001/settings/index');
                 $url = $this->connection->start(storeId: $this->channels->defaultId(), settingsUrl: $settingsUrl);
                 return $redirect->setUrl($url);
             }
             if ($operation === 'disconnect') {
-                $this->connection->disconnectAll();
+                $notified = $this->connection->disconnectAll();
                 $this->onboarding->reset();
+                $this->progress();
+                if (!$notified) {
+                    $this->messageManager->addWarningMessage(
+                        __('Removed locally; Agent001 could not be notified.'),
+                    );
+                    return $redirect;
+                }
             } elseif ($operation === 'onboarding_finish') {
                 if ($this->progress()['step'] < Onboarding::STEPS) {
                     throw new LocalizedException(
@@ -83,68 +105,86 @@ class Save extends Action implements HttpPostActionInterface
                 if (empty($apiKey)) {
                     throw new LocalizedException(__('Connect the store first.'));
                 }
-                match ($operation) {
-                    'agents' => $this->assignAgents(apiKey: $apiKey),
-                    'toggle' => $this->toggle(apiKey: $apiKey, storeId: $targets[0]),
-                    'catalog' => $this->synchronize(storeIds: $targets),
-                    default => throw new LocalizedException(__('Invalid operation.')),
-                };
+                if ($operation === 'toggle') {
+                    $storeId = $this->channels->id(value: $this->getRequest()->getParam('store'));
+                    if (!$this->locks->lock($this->queue->lockName(storeId: $storeId), 0)) {
+                        throw new LocalizedException(__('Synchronization is running. Try again later.'));
+                    }
+                    $lock = $this->queue->lockName(storeId: $storeId);
+                    $this->toggle(apiKey: $apiKey, storeId: $storeId);
+                } else {
+                    match ($operation) {
+                        'agents' => $this->assignAgents(apiKey: $apiKey),
+                        'catalog' => $this->synchronize(storeIds: $this->catalogTargets()),
+                        'relocate' => $this->connection->relocate(),
+                        'retry' => $this->queue->retryFailed(
+                            storeId: $this->channels->id(value: $this->getRequest()->getParam('store')),
+                        ),
+                        'remove_inactive' => $this->connection->disconnect(storeId: $this->inactiveTarget()),
+                        default => throw new LocalizedException(__('Invalid operation.')),
+                    };
+                }
             }
             $this->progress();
             $this->messageManager->addSuccessMessage(__('Settings saved.'));
         } catch (LocalizedException $error) {
             $this->messageManager->addErrorMessage($error->getMessage());
-        } catch (Throwable $error) {
-            $this->logger->error(
-                'Agent001 admin operation failed.',
-                ['exception_class' => $error::class],
-            );
+        } catch (UnauthorizedException) {
             $this->messageManager->addErrorMessage(
-                __('The operation failed. Check the connection and store host.'),
+                __('The Agent001 key was revoked. Disconnect and connect the store again.'),
+            );
+        } catch (Throwable $error) {
+            $this->logger->error('Agent001 admin operation failed.', [
+                'exception_class' => $error::class, 'message' => $error->getMessage(),
+            ]);
+            $this->messageManager->addErrorMessage(
+                $error instanceof RuntimeException && $error->getCode() === 409
+                    ? __('Another Agent001 connection already uses this store URL.')
+                    : __('The operation failed. Check the connection and store host.'),
             );
         } finally {
-            foreach ($locked as $storeId) {
-                $this->locks->unlock('agent001_store_' . $storeId);
+            if (!empty($lock)) {
+                $this->locks->unlock($lock);
             }
         }
         return $redirect;
     }
 
     /**
+     * Return store views posted for catalog synchronization.
+     *
      * @return list<int>
      */
-    private function targets(mixed $operation): array
+    private function catalogTargets(): array
     {
-        $request = $this->getRequest();
-        if ($operation === 'toggle') {
-            return [$this->channels->id(value: $request->getParam('store'))];
+        $posted = $this->getRequest()->getParam('catalog', []);
+        if (!is_array(value: $posted) || empty($posted)) {
+            throw new LocalizedException(__('Select an active store view.'));
         }
-        if ($operation === 'catalog') {
-            $posted = $request->getParam('catalog', []);
-            if (!is_array(value: $posted) || empty($posted)) {
-                throw new LocalizedException(__('Select an active store view.'));
-            }
-            return array_values(array: array_unique(array: array_map(
-                callback: fn (mixed $id): int => $this->channels->id(value: $id),
-                array: $posted,
-            )));
-        }
-        if ($operation === 'disconnect') {
-            return array_keys(array: $this->channels->stores());
-        }
-        if ($operation === 'agents') {
-            $picked = $request->getParam('agent', []);
-            $picked = is_array(value: $picked) ? $picked : [];
-            return array_keys(array: array_filter(
-                array: $this->channels->settings(),
-                callback: static fn (array $setting, int $id): bool => ($picked[$id] ?? '')
-                    !== ($setting['agent_id'] ?? ''),
-                mode: ARRAY_FILTER_USE_BOTH,
-            ));
-        }
-        return [];
+        return array_values(array: array_unique(array: array_map(
+            callback: fn (mixed $id): int => $this->channels->id(value: $id),
+            array: $posted,
+        )));
     }
 
+    /**
+     * Return a posted inactive store view that still has an agent.
+     */
+    private function inactiveTarget(): int
+    {
+        $value = $this->getRequest()->getParam('store');
+        $storeId = is_scalar(value: $value) && ctype_digit(text: (string) $value) ? (int) $value : 0;
+        if (!in_array(needle: $storeId, haystack: array_keys(array: $this->channels->inactive()), strict: true)) {
+            throw new LocalizedException(__('Select an inactive store view.'));
+        }
+        return $storeId;
+    }
+
+    /**
+     * Assign the selected agents to store views.
+     *
+     * @param string $apiKey
+     */
     private function assignAgents(string $apiKey): void
     {
         $picked = $this->getRequest()->getParam('agent', []);
@@ -211,6 +251,12 @@ class Save extends Action implements HttpPostActionInterface
         }
     }
 
+    /**
+     * Enable or disable the agent of a store view.
+     *
+     * @param string $apiKey
+     * @param int $storeId
+     */
     private function toggle(string $apiKey, int $storeId): void
     {
         $setting = $this->settings->get(storeId: $storeId);
@@ -224,6 +270,8 @@ class Save extends Action implements HttpPostActionInterface
     }
 
     /**
+     * Queue a full synchronization for store views.
+     *
      * @param list<int> $storeIds
      */
     private function synchronize(array $storeIds): void
@@ -242,7 +290,6 @@ class Save extends Action implements HttpPostActionInterface
             $setting['categories'] = $categories;
             if ($changed) {
                 $setting['generation'] = bin2hex(string: random_bytes(length: 16));
-                $setting['setup_completed'] = false;
                 $this->queue->clear(storeId: $storeId);
             }
             $this->queue->enqueue(storeId: $storeId, generation: $setting['generation']);
@@ -256,6 +303,9 @@ class Save extends Action implements HttpPostActionInterface
         }
     }
 
+    /**
+     * Update and return setup wizard progress.
+     */
     private function progress(): array
     {
         return $this->onboarding->sync(
@@ -264,6 +314,11 @@ class Save extends Action implements HttpPostActionInterface
         );
     }
 
+    /**
+     * Return valid category identifiers posted for a store view.
+     *
+     * @param int $storeId
+     */
     private function selectedCategories(int $storeId): array
     {
         $posted = $this->getRequest()->getParam('categories', []);

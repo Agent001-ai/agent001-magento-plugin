@@ -12,10 +12,18 @@ use Magento\Framework\App\RouterInterface;
 
 class Router implements RouterInterface
 {
+    /**
+     * @param ActionFactory $actions
+     */
     public function __construct(private readonly ActionFactory $actions)
     {
     }
 
+    /**
+     * Match the order API path.
+     *
+     * @param RequestInterface $request
+     */
     public function match(RequestInterface $request): ?ActionInterface
     {
         $path = $request->getPathInfo();

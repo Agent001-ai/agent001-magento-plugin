@@ -18,8 +18,18 @@ use Magento\Store\Api\Data\StoreInterface;
 
 class Stock
 {
+    /**
+     * @var bool|null
+     */
     private ?bool $msi = null;
 
+    /**
+     * @param ModuleManager $modules
+     * @param ObjectManagerInterface $objects
+     * @param StockRegistryInterface $registry
+     * @param IndexerRegistry $indexers
+     * @param StockRegistryStorage $storage
+     */
     public function __construct(
         private readonly ModuleManager $modules,
         private readonly ObjectManagerInterface $objects,
@@ -29,11 +39,17 @@ class Stock
     ) {
     }
 
+    /**
+     * Clear cached stock data.
+     */
     public function reset(): void
     {
         $this->storage->clean();
     }
 
+    /**
+     * Check whether the stock indexer has pending changes.
+     */
     public function indexing(): bool
     {
         try {
@@ -49,6 +65,11 @@ class Stock
         return (int) $view->getChangelog()->getVersion() > (int) $state->getVersionId();
     }
 
+    /**
+     * Return the stock identifier of a store view.
+     *
+     * @param StoreInterface $store
+     */
     public function id(StoreInterface $store): int
     {
         if (!$this->msi()) {
@@ -59,6 +80,12 @@ class Stock
         return (int) $stock->getStockId();
     }
 
+    /**
+     * Check whether a product is salable.
+     *
+     * @param Product $product
+     * @param int $stockId
+     */
     public function salable(Product $product, int $stockId): bool
     {
         if ($this->msi()) {
@@ -68,6 +95,13 @@ class Stock
         return (int) $this->registry->getStockStatus((int) $product->getId())->getStockStatus() === 1;
     }
 
+    /**
+     * Return the salable quantity of a product.
+     *
+     * @param Product $product
+     * @param int $stockId
+     * @param int $websiteId
+     */
     public function quantity(Product $product, int $stockId, int $websiteId): ?float
     {
         $item = $this->registry->getStockItem((int) $product->getId(), $websiteId);
@@ -81,6 +115,9 @@ class Stock
             ->execute((string) $product->getSku(), $stockId);
     }
 
+    /**
+     * Check whether Multi-Source Inventory is enabled.
+     */
     private function msi(): bool
     {
         return $this->msi ??= $this->modules->isEnabled('Magento_InventorySales');

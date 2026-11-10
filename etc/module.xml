@@ -1,6 +1,15 @@
 <?xml version="1.0"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
     <module name="Agent001_Assistant">
-        <sequence><module name="Magento_Backend"/><module name="Magento_Catalog"/><module name="Magento_ConfigurableProduct"/><module name="Magento_Sales"/><module name="Magento_PageCache"/><module name="Magento_Csp"/><module name="Magento_Cron"/></sequence>
+        <sequence>
+            <module name="Magento_Backend"/>
+            <module name="Magento_Catalog"/>
+            <module name="Magento_ConfigurableProduct"/>
+            <module name="Magento_Sales"/>
+            <module name="Magento_PageCache"/>
+            <module name="Magento_Csp"/>
+            <module name="Magento_Cron"/>
+        </sequence>
     </module>
 </config>

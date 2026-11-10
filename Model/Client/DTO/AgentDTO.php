@@ -11,6 +11,10 @@ class AgentDTO
     public const UUID = '/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i';
 
     /**
+     * @param string $id
+     * @param string $name
+     * @param string $embedToken
+     * @param bool $active
      * @param list<string> $channels
      */
     public function __construct(
@@ -22,6 +26,11 @@ class AgentDTO
     ) {
     }
 
+    /**
+     * Create the DTO from an API record.
+     *
+     * @param array $record
+     */
     public static function from(array $record): self
     {
         if (!is_string(value: $record['id'] ?? null) || !is_string(value: $record['name'] ?? null)
@@ -39,6 +48,11 @@ class AgentDTO
         );
     }
 
+    /**
+     * Create DTOs from API records.
+     *
+     * @param array $records
+     */
     public static function fromArray(array $records): array
     {
         $agents = [];

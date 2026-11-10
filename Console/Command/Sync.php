@@ -13,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Sync extends Command
 {
+    /**
+     * @param Scheduler $scheduler
+     * @param StoreManagerInterface $stores
+     */
     public function __construct(
         private readonly Scheduler $scheduler,
         private readonly StoreManagerInterface $stores,
@@ -20,6 +24,9 @@ class Sync extends Command
         parent::__construct();
     }
 
+    /**
+     * Configure the synchronization command.
+     */
     protected function configure(): void
     {
         $this->setName('agent001:sync')->setDescription('Queue full catalog synchronization.');
@@ -32,6 +39,12 @@ class Sync extends Command
         );
     }
 
+    /**
+     * Queue a full catalog synchronization.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $filter = $input->getOption('store');

@@ -11,12 +11,30 @@ use RuntimeException;
 
 class Client
 {
-    public const VERSION = '1.0.0';
+    public const VERSION = '1.1.0';
 
+    public const JSON_FLAGS = JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE;
+
+    /**
+     * @param Config $config
+     * @param CurlFactory $curlFactory
+     */
     public function __construct(private readonly Config $config, private readonly CurlFactory $curlFactory)
     {
     }
 
+    /**
+     * Send a request to the Agent001 API with retries.
+     *
+     * @param string $method
+     * @param string $path
+     * @param string $apiKey
+     * @param array|null $data
+     * @param array $headers
+     * @param string $channel
+     * @param int $attempts
+     * @param int $timeout
+     */
     public function request(
         string $method,
         string $path,
@@ -35,7 +53,7 @@ class Client
         if (!empty($apiKey)) {
             $headers['X-API-Key'] = $apiKey;
         }
-        $body = $data !== null ? json_encode(value: $data, flags: JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : '';
+        $body = $data !== null ? json_encode(value: $data, flags: self::JSON_FLAGS) : '';
         if (strlen(string: $body) > 8388608) {
             throw new RuntimeException(message: 'The Agent001 payload exceeds 8 MB.');
         }
@@ -52,6 +70,9 @@ class Client
             if ($status >= 200 && $status < 300) {
                 return $this->decode(response: $response);
             }
+            if ($status === 401) {
+                throw new UnauthorizedException(message: 'The Agent001 API key was rejected.', code: $status);
+            }
             if ($status > 0 && $status < 500 && $status !== 429) {
                 break;
             }
@@ -63,7 +84,13 @@ class Client
     }
 
     /**
-     * @param array<string, string> $headers
+     * Send a single HTTP request.
+     *
+     * @param string $method
+     * @param string $url
+     * @param array<string,string> $headers
+     * @param string $body
+     * @param int $timeout
      * @return array{int, string}
      */
     private function send(string $method, string $url, array $headers, string $body, int $timeout): array
@@ -89,6 +116,11 @@ class Client
         return [(int) $curl->getStatus(), (string) $curl->getBody()];
     }
 
+    /**
+     * Decode a JSON response.
+     *
+     * @param string $response
+     */
     private function decode(string $response): array
     {
         if (empty($response)) {

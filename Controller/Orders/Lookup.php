@@ -28,6 +28,17 @@ class Lookup implements
     HttpOptionsActionInterface,
     CsrfAwareActionInterface
 {
+    /**
+     * @param RequestInterface $request
+     * @param JsonFactory $json
+     * @param StoreManagerInterface $stores
+     * @param Settings $settings
+     * @param Config $config
+     * @param Access $access
+     * @param OrderLookup $lookup
+     * @param RemoteAddress $remoteAddress
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         private readonly RequestInterface $request,
         private readonly JsonFactory $json,
@@ -41,6 +52,9 @@ class Lookup implements
     ) {
     }
 
+    /**
+     * Return the status of an order verified by email.
+     */
     public function execute(): Json
     {
         $result = $this->json->create();
@@ -108,27 +122,51 @@ class Lookup implements
         } catch (JsonException) {
             return $this->error(result: $result, code: 'agent001_invalid_request', status: 400);
         } catch (Throwable $error) {
-            $this->logger->error('Agent001 order lookup failed.', ['exception_class' => $error::class]);
+            $this->logger->error('Agent001 order lookup failed.', [
+                'exception_class' => $error::class, 'message' => $error->getMessage(),
+            ]);
             return $this->error(result: $result, code: 'agent001_unavailable', status: 503);
         }
     }
 
+    /**
+     * Skip the CSRF exception for the public order API.
+     *
+     * @param RequestInterface $request
+     */
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
     {
         return null;
     }
 
+    /**
+     * Allow requests authenticated by an Agent001 key.
+     *
+     * @param RequestInterface $request
+     */
     public function validateForCsrf(RequestInterface $request): ?bool
     {
         return true;
     }
 
+    /**
+     * Write a rate limit response.
+     *
+     * @param Json $result
+     */
     private function rateLimited(Json $result): Json
     {
         $result->setHeader('Retry-After', '60', true);
         return $this->error(result: $result, code: 'agent001_rate_limited', status: 429);
     }
 
+    /**
+     * Write an error response.
+     *
+     * @param Json $result
+     * @param string $code
+     * @param int $status
+     */
     private function error(Json $result, string $code, int $status): Json
     {
         return $result->setHttpResponseCode($status)->setData(['code' => $code, 'message' => (string) __($code)]);

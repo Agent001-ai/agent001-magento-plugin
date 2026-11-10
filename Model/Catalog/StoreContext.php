@@ -6,35 +6,60 @@ namespace Agent001\Assistant\Model\Catalog;
 
 use Generator;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 class StoreContext
 {
+    /**
+     * @param Categories $categories
+     * @param CollectionFactory $attributes
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         private readonly Categories $categories,
         private readonly CollectionFactory $attributes,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
+    /**
+     * Read store context documents of categories and storefront attributes.
+     *
+     * @param int $storeId
+     */
     public function read(int $storeId): Generator
     {
         $categories = $this->categories->all(storeId: $storeId);
         foreach ($categories as $category) {
-            $path = $this->categories->paths(ids: [$category['id']], categories: $categories)[0] ?? '';
+            $trail = $this->categories->trails(ids: [$category['id']], categories: $categories)[0] ?? [];
             yield [
                 'type' => 'category',
                 'id' => 'category:' . $category['id'],
                 'title' => mb_substr(string: $category['name'], start: 0, length: 500),
-                'content' => mb_substr(string: $path, start: 0, length: 1000),
+                'content' => mb_substr(string: implode(separator: ' > ', array: $trail), start: 0, length: 1000),
                 'url' => $category['url'],
             ];
         }
         $attributes = $this->attributes->create();
         $attributes->addFieldToFilter('frontend_input', ['in' => ['select', 'multiselect']]);
         $attributes->addFieldToFilter('is_user_defined', 1);
+        $attributes->addFieldToFilter(
+            ['is_visible_on_front', 'is_filterable'],
+            [['eq' => 1], ['gt' => 0]],
+        );
         foreach ($attributes as $attribute) {
-            $attribute->setStoreId($storeId);
             $code = (string) $attribute->getAttributeCode();
-            $label = mb_substr(string: (string) $attribute->getStoreLabel($storeId), start: 0, length: 500);
+            try {
+                $attribute->setStoreId($storeId);
+                $label = mb_substr(string: (string) $attribute->getStoreLabel($storeId), start: 0, length: 500);
+                $options = $attribute->getSource()->getAllOptions(false);
+            } catch (Throwable $error) {
+                $this->logger->warning('Agent001 skipped an attribute that could not be exported.', [
+                    'attribute' => $code, 'exception_class' => $error::class, 'message' => $error->getMessage(),
+                ]);
+                continue;
+            }
             yield [
                 'type' => 'attribute',
                 'id' => 'option:' . $code,
@@ -42,7 +67,7 @@ class StoreContext
                 'content' => $label,
                 'url' => '',
             ];
-            foreach ($attribute->getSource()->getAllOptions(false) as $option) {
+            foreach ($options as $option) {
                 if (!is_scalar(value: $option['value'] ?? null) || !is_scalar(value: $option['label'] ?? null)) {
                     continue;
                 }

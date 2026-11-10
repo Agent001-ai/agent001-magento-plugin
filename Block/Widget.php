@@ -13,6 +13,13 @@ use Magento\Framework\View\Helper\SecureHtmlRenderer;
 
 class Widget extends Template implements IdentityInterface
 {
+    /**
+     * @param Context $context
+     * @param Settings $settings
+     * @param Config $config
+     * @param SecureHtmlRenderer $secureRenderer
+     * @param array $data
+     */
     public function __construct(
         Context $context,
         private readonly Settings $settings,
@@ -23,6 +30,9 @@ class Widget extends Template implements IdentityInterface
         parent::__construct($context, $data);
     }
 
+    /**
+     * Render the widget loader script.
+     */
     public function scriptHtml(): string
     {
         $attributes = $this->widget();
@@ -37,11 +47,17 @@ class Widget extends Template implements IdentityInterface
         );
     }
 
+    /**
+     * Return cache tags of the widget block.
+     */
     public function getIdentities(): array
     {
         return ['AGENT001_' . (int) $this->_storeManager->getStore()->getId()];
     }
 
+    /**
+     * Return loader script attributes of the current store view.
+     */
     private function widget(): array
     {
         $storeId = (int) $this->_storeManager->getStore()->getId();

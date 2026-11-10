@@ -13,6 +13,13 @@ use Magento\Sales\Model\Order\Config;
 
 class Lookup
 {
+    /**
+     * @param CollectionFactory $orders
+     * @param OrderRepositoryInterface $repository
+     * @param Config $config
+     * @param Money $money
+     * @param Tracking $tracking
+     */
     public function __construct(
         private readonly CollectionFactory $orders,
         private readonly OrderRepositoryInterface $repository,
@@ -22,6 +29,13 @@ class Lookup
     ) {
     }
 
+    /**
+     * Return the public status of an order matching its email.
+     *
+     * @param int|null $storeId
+     * @param string $number
+     * @param string $email
+     */
     public function find(?int $storeId, string $number, string $email): ?array
     {
         $collection = $this->orders->create();
@@ -96,6 +110,11 @@ class Lookup
         ];
     }
 
+    /**
+     * Format a database date as ISO 8601.
+     *
+     * @param string|null $value
+     */
     private function date(?string $value): ?string
     {
         if (!$value) {

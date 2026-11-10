@@ -9,10 +9,18 @@ use Throwable;
 
 class NonceStore
 {
+    /**
+     * @param ResourceConnection $resource
+     */
     public function __construct(private readonly ResourceConnection $resource)
     {
     }
 
+    /**
+     * Store data under a new single use nonce.
+     *
+     * @param array $data
+     */
     public function create(array $data): string
     {
         $token = bin2hex(string: random_bytes(length: 32));
@@ -27,6 +35,11 @@ class NonceStore
         return $token;
     }
 
+    /**
+     * Return and delete data stored under a valid nonce.
+     *
+     * @param string $token
+     */
     public function consume(string $token): array
     {
         if (!preg_match(pattern: '/\A[a-f0-9]{64}\z/', subject: $token)) {

@@ -8,10 +8,19 @@ use UnexpectedValueException;
 
 class ConnectionDTO
 {
+    /**
+     * @param string $apiKey
+     * @param string $accountName
+     */
     public function __construct(public readonly string $apiKey, public readonly string $accountName)
     {
     }
 
+    /**
+     * Create the DTO from an API record.
+     *
+     * @param array $record
+     */
     public static function from(array $record): self
     {
         if (!is_string(value: $record['api_key'] ?? null) || empty($record['api_key'])

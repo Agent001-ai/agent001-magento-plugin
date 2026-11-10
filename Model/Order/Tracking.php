@@ -17,6 +17,12 @@ class Tracking
         'orlen' => ['orlen', 'https://www.orlenpaczka.pl/sledz-paczke/?numer='],
     ];
 
+    /**
+     * Return a tracking entry with its carrier and URL.
+     *
+     * @param string $number
+     * @param string $description
+     */
     public function entry(string $number, string $description): array
     {
         if (filter_var(value: $number, filter: FILTER_VALIDATE_URL)) {

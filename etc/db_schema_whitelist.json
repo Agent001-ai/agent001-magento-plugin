@@ -18,7 +18,8 @@
             "generation": true,
             "revision": true,
             "attempts": true,
-            "available_at": true
+            "available_at": true,
+            "queued_at": true
         },
         "constraint": {
             "PRIMARY": true,

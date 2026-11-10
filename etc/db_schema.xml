@@ -1,10 +1,19 @@
 <?xml version="1.0"?>
-<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
     <table name="agent001_setting" resource="default" engine="innodb">
         <column xsi:type="smallint" name="store_id" unsigned="true" nullable="false"/>
         <column xsi:type="mediumtext" name="data" nullable="false"/>
-        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="store_id"/></constraint>
-        <constraint xsi:type="foreign" referenceId="AGENT001_SETTING_STORE_ID_STORE_STORE_ID" table="agent001_setting" column="store_id" referenceTable="store" referenceColumn="store_id" onDelete="CASCADE"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="store_id"/>
+        </constraint>
+        <constraint xsi:type="foreign"
+                    referenceId="AGENT001_SETTING_STORE_ID_STORE_STORE_ID"
+                    table="agent001_setting"
+                    column="store_id"
+                    referenceTable="store"
+                    referenceColumn="store_id"
+                    onDelete="CASCADE"/>
     </table>
     <table name="agent001_job" resource="default" engine="innodb">
         <column xsi:type="varchar" name="job_key" length="100" nullable="false"/>
@@ -15,16 +24,31 @@
         <column xsi:type="varchar" name="revision" length="32" nullable="false"/>
         <column xsi:type="int" name="attempts" unsigned="true" nullable="false" default="0"/>
         <column xsi:type="bigint" name="available_at" unsigned="true" nullable="false"/>
-        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="job_key"/></constraint>
-        <constraint xsi:type="foreign" referenceId="AGENT001_JOB_STORE_ID_STORE_STORE_ID" table="agent001_job" column="store_id" referenceTable="store" referenceColumn="store_id" onDelete="CASCADE"/>
-        <index referenceId="AGENT001_JOB_AVAILABLE_AT" indexType="btree"><column name="available_at"/></index>
+        <column xsi:type="bigint" name="queued_at" unsigned="true" nullable="false" default="0"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="job_key"/>
+        </constraint>
+        <constraint xsi:type="foreign"
+                    referenceId="AGENT001_JOB_STORE_ID_STORE_STORE_ID"
+                    table="agent001_job"
+                    column="store_id"
+                    referenceTable="store"
+                    referenceColumn="store_id"
+                    onDelete="CASCADE"/>
+        <index referenceId="AGENT001_JOB_AVAILABLE_AT" indexType="btree">
+            <column name="available_at"/>
+        </index>
     </table>
     <table name="agent001_nonce" resource="default" engine="innodb">
         <column xsi:type="varchar" name="token_hash" length="64" nullable="false"/>
         <column xsi:type="text" name="data" nullable="false"/>
         <column xsi:type="bigint" name="expires_at" unsigned="true" nullable="false"/>
-        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="token_hash"/></constraint>
-        <index referenceId="AGENT001_NONCE_EXPIRES_AT" indexType="btree"><column name="expires_at"/></index>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="token_hash"/>
+        </constraint>
+        <index referenceId="AGENT001_NONCE_EXPIRES_AT" indexType="btree">
+            <column name="expires_at"/>
+        </index>
     </table>
     <table name="agent001_onboarding" resource="default" engine="innodb">
         <column xsi:type="smallint" name="store_id" unsigned="true" nullable="false"/>
@@ -33,7 +57,15 @@
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP"/>
         <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true"/>
         <column xsi:type="timestamp" name="completed_at" nullable="true"/>
-        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="store_id"/></constraint>
-        <constraint xsi:type="foreign" referenceId="AGENT001_ONBOARDING_STORE_ID_STORE_STORE_ID" table="agent001_onboarding" column="store_id" referenceTable="store" referenceColumn="store_id" onDelete="CASCADE"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="store_id"/>
+        </constraint>
+        <constraint xsi:type="foreign"
+                    referenceId="AGENT001_ONBOARDING_STORE_ID_STORE_STORE_ID"
+                    table="agent001_onboarding"
+                    column="store_id"
+                    referenceTable="store"
+                    referenceColumn="store_id"
+                    onDelete="CASCADE"/>
     </table>
 </schema>

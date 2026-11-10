@@ -11,10 +11,19 @@ use UnexpectedValueException;
 
 class Agents
 {
+    /**
+     * @param Client $client
+     */
     public function __construct(private readonly Client $client)
     {
     }
 
+    /**
+     * Return agents of the connected account.
+     *
+     * @param string $apiKey
+     * @param string $channel
+     */
     public function listing(string $apiKey, string $channel): AgentListDTO
     {
         $response = $this->client->request(
@@ -28,6 +37,12 @@ class Agents
         return AgentListDTO::from(record: $response);
     }
 
+    /**
+     * Send store hosts allowed to embed the widget.
+     *
+     * @param string $apiKey
+     * @param array $hosts
+     */
     public function hosts(string $apiKey, array $hosts): void
     {
         $this->client->request(
@@ -40,6 +55,14 @@ class Agents
         );
     }
 
+    /**
+     * Assign an agent to a store view channel.
+     *
+     * @param string $apiKey
+     * @param string $channel
+     * @param string $id
+     * @param string $site
+     */
     public function select(string $apiKey, string $channel, string $id, string $site): AgentDTO
     {
         $this->client->request(
@@ -62,21 +85,60 @@ class Agents
         foreach ($response->agents as $agent) {
             if ($agent->id === $id && !empty($agent->embedToken)
                 && in_array(needle: $id, haystack: $response->selectedIds, strict: true)) {
-                $this->client->request(
-                    method: 'POST',
-                    path: '/api/v1/integrations/me/agents/' . rawurlencode(string: $id) . '/domain',
-                    apiKey: $apiKey,
-                    data: ['domain' => parse_url(url: $site, component: PHP_URL_HOST)],
-                    channel: $channel,
-                    attempts: 1,
-                    timeout: 10,
-                );
+                $this->domain(apiKey: $apiKey, channel: $channel, id: $id, site: $site);
                 return $agent;
             }
         }
         throw new UnexpectedValueException(message: 'The backend did not confirm the selected agent.');
     }
 
+    /**
+     * Allow an agent to be embedded on the host of a store view.
+     *
+     * @param string $apiKey
+     * @param string $channel
+     * @param string $id
+     * @param string $site
+     */
+    public function domain(string $apiKey, string $channel, string $id, string $site): void
+    {
+        $this->client->request(
+            method: 'POST',
+            path: '/api/v1/integrations/me/agents/' . rawurlencode(string: $id) . '/domain',
+            apiKey: $apiKey,
+            data: ['domain' => parse_url(url: $site, component: PHP_URL_HOST)],
+            channel: $channel,
+            attempts: 1,
+            timeout: 10,
+        );
+    }
+
+    /**
+     * Change the store URL of the connection.
+     *
+     * @param string $apiKey
+     * @param string $site
+     */
+    public function site(string $apiKey, string $site): void
+    {
+        $this->client->request(
+            method: 'PUT',
+            path: '/api/v1/integrations/me/site',
+            apiKey: $apiKey,
+            data: ['site' => $site],
+            attempts: 1,
+            timeout: 10,
+        );
+    }
+
+    /**
+     * Enable or disable an agent.
+     *
+     * @param string $apiKey
+     * @param string $channel
+     * @param string $id
+     * @param bool $active
+     */
     public function toggle(string $apiKey, string $channel, string $id, bool $active): void
     {
         $response = $this->client->request(

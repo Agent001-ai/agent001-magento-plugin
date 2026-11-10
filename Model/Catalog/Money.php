@@ -14,6 +14,12 @@ class Money
      */
     private array $digits = [];
 
+    /**
+     * Format an amount with the precision of its currency.
+     *
+     * @param float $amount
+     * @param string $currency
+     */
     public function format(float $amount, string $currency): string
     {
         return number_format(
@@ -24,6 +30,11 @@ class Money
         );
     }
 
+    /**
+     * Return the number of fraction digits of a currency.
+     *
+     * @param string $currency
+     */
     private function fractionDigits(string $currency): int
     {
         $formatter = new NumberFormatter(locale: 'en_US', style: NumberFormatter::CURRENCY);

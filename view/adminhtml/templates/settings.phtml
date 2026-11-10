@@ -9,6 +9,7 @@ $step = $block->step();
 $view = $block->view();
 $connect = $block->getRequest()->getParam('connect');
 $failed = $block->agentsFailed();
+$inactive = $block->inactive();
 $badge = static function (array $setting) use ($escaper): void {
     $code = (string) ($setting['status'] ?? 'idle'); ?>
     <span class="agent001-badge"
@@ -21,6 +22,10 @@ $meta = static function (array $setting) use ($escaper, $block): void {
         <?= $escaper->escapeHtml(__('Products')) ?>:
         <span data-role="sync-count"><?= (int) ($setting['count'] ?? 0) ?></span>
         <span data-role="sync-date" <?= empty($date) ? 'hidden' : '' ?>><?= $escaper->escapeHtml($date) ?></span>
+        <span data-role="skipped-row" <?= empty($setting['skipped']) ? 'hidden' : '' ?>>
+            <?= $escaper->escapeHtml(__('Skipped')) ?>:
+            <span data-role="sync-skipped"><?= (int) ($setting['skipped'] ?? 0) ?></span>
+        </span>
     </span>
 <?php };
 $status = static function (int $storeId, array $channel) use ($escaper, $badge, $meta): void {
@@ -39,6 +44,12 @@ $status = static function (int $storeId, array $channel) use ($escaper, $badge, 
         <p class="message message-error" data-role="failed-row" <?= $channel['failures'] ? '' : 'hidden' ?>>
             <?= $escaper->escapeHtml(__('Failed background jobs:')) ?>
             <span data-role="failed-jobs"><?= (int) $channel['failures'] ?></span>
+            <button class="action-tertiary agent001-small"
+                    form="agent001-retry-<?= (int) $storeId ?>"
+                    name="operation"
+                    value="retry">
+                <?= $escaper->escapeHtml(__('Retry')) ?>
+            </button>
         </p>
         <div class="message message-warning" data-role="worker-warning" <?= $channel['stalled'] ? '' : 'hidden' ?>>
             <?= $escaper->escapeHtml(__('The worker is not running. Start it on the server:')) ?>
@@ -82,6 +93,7 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                     $indent = str_repeat(string: "\u{2003}", times: max(0, count(value: $category['path']) - 3));
                     ?>
                     <option value="<?= (int) $category['id'] ?>"
+                            data-path="<?= $escaper->escapeHtmlAttr(implode('/', $category['path'])) ?>"
                             data-label="<?= $escaper->escapeHtmlAttr($category['name']) ?>"
                             <?= $chosen ? 'selected' : '' ?>>
                         <?= $escaper->escapeHtml($indent . $category['name']) ?>
@@ -155,13 +167,6 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
         </div>
         <?= $block->formStartHtml() ?>
             <?php if ($connected): ?>
-                <?php $confirm = __('Reconnecting issues a new API key. The current key stops working immediately.'); ?>
-                <button class="action-secondary"
-                        name="operation"
-                        value="connect"
-                        data-confirm="<?= $escaper->escapeHtmlAttr($confirm) ?>">
-                    <?= $escaper->escapeHtml(__('Reconnect')) ?>
-                </button>
                 <?php
                 $confirm = __('Disconnect the store? Catalogs of all store views are removed from Agent001 and the chat disappears until you connect again.');
                 ?>
@@ -177,6 +182,47 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                 </button>
             <?php endif; ?>
         </form>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($block->relocated()): ?>
+    <section class="agent001-card message message-warning">
+        <p>
+            <?= $escaper->escapeHtml(
+                __('The store URL changed. The chat is hidden until you update it in Agent001.')
+            ) ?>
+        </p>
+        <?= $block->formStartHtml() ?>
+            <button class="action-primary" name="operation" value="relocate">
+                <?= $escaper->escapeHtml(__('Update store URL')) ?>
+            </button>
+        </form>
+    </section>
+    <?php endif; ?>
+
+    <?php if (!empty($inactive)): ?>
+    <section class="agent001-card">
+        <h2><?= $escaper->escapeHtml(__('Inactive store views with an agent')) ?></h2>
+        <p class="agent001-muted">
+            <?= $escaper->escapeHtml(__('Their catalogs stay in Agent001 until you remove them.')) ?>
+        </p>
+        <ul class="agent001-links">
+            <?php foreach ($inactive as $storeId => $name): ?>
+                <li>
+                    <?= $block->formStartHtml() ?>
+                        <input type="hidden" name="store" value="<?= (int) $storeId ?>">
+                        <?= $escaper->escapeHtml($name) ?>
+                        <?php $confirm = (string) __('Remove this store view from Agent001?'); ?>
+                        <button class="action-tertiary"
+                                name="operation"
+                                value="remove_inactive"
+                                <?= $block->confirmHtml(message: $confirm) ?>>
+                            <?= $escaper->escapeHtml(__('Remove from Agent001')) ?>
+                        </button>
+                    </form>
+                </li>
+            <?php endforeach; ?>
+        </ul>
     </section>
     <?php endif; ?>
 
@@ -276,7 +322,9 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                                     <?php
                                     $active = !empty($setting['active']);
                                     $confirm = $active
-                                        ? (string) __('Disable this agent? Its chat stops responding in this store view.')
+                                        ? (string) __(
+                                            'Disable this agent? Its chat stops responding in this store view.'
+                                        )
                                         : '';
                                     ?>
                                     <button class="action-tertiary agent001-small"
@@ -332,7 +380,7 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
         <h2><?= $escaper->escapeHtml(__('Synchronize your catalog')) ?></h2>
         <p class="agent001-muted">
             <?= $escaper->escapeHtml(
-                __('Choose the categories to send. Without a selection the entire catalog is sent.')
+                __('Choose the categories to send. Selecting a category includes its subcategories.')
             ) ?>
         </p>
         <?= $block->formStartHtml() ?>
@@ -412,6 +460,14 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                 </button>
             </form>
         </details>
+        <?php endforeach; ?>
+    <?php endif; ?>
+
+    <?php if ($connected): ?>
+        <?php foreach ($assigned as $storeId => $channel): ?>
+            <?= $block->formStartHtml(id: 'agent001-retry-' . $storeId) ?>
+                <input type="hidden" name="store" value="<?= (int) $storeId ?>">
+            </form>
         <?php endforeach; ?>
     <?php endif; ?>
 </div>

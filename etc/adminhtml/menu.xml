@@ -1,4 +1,14 @@
 <?xml version="1.0"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
-    <menu><add id="Agent001_Assistant::settings" title="Agent001 Assistant" translate="title" module="Agent001_Assistant" sortOrder="90" parent="Magento_Backend::marketing" action="agent001/settings/index" resource="Agent001_Assistant::settings"/></menu>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Agent001_Assistant::settings"
+             title="Agent001 Assistant"
+             translate="title"
+             module="Agent001_Assistant"
+             sortOrder="90"
+             parent="Magento_Backend::marketing"
+             action="agent001/settings/index"
+             resource="Agent001_Assistant::settings"/>
+    </menu>
 </config>

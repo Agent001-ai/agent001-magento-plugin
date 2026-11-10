@@ -17,6 +17,11 @@ class Work extends Command
 {
     private const MEMORY_LIMIT = 536870912;
 
+    /**
+     * @param Worker $worker
+     * @param State $state
+     * @param Queue $queue
+     */
     public function __construct(
         private readonly Worker $worker,
         private readonly State $state,
@@ -25,6 +30,9 @@ class Work extends Command
         parent::__construct();
     }
 
+    /**
+     * Configure the worker command.
+     */
     protected function configure(): void
     {
         $this->setName('agent001:work')->setDescription('Process the durable Agent001 queue.');
@@ -39,6 +47,12 @@ class Work extends Command
         );
     }
 
+    /**
+     * Process queued synchronization jobs.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {

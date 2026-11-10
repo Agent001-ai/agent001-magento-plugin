@@ -19,6 +19,15 @@ class Progress extends Action implements HttpGetActionInterface
 {
     public const ADMIN_RESOURCE = 'Agent001_Assistant::settings';
 
+    /**
+     * @param Context $context
+     * @param Channels $channels
+     * @param Settings $settings
+     * @param Queue $queue
+     * @param Onboarding $onboarding
+     * @param JsonFactory $json
+     * @param TimezoneInterface $timezone
+     */
     public function __construct(
         Context $context,
         private readonly Channels $channels,
@@ -31,6 +40,9 @@ class Progress extends Action implements HttpGetActionInterface
         parent::__construct($context);
     }
 
+    /**
+     * Return synchronization progress of all store views.
+     */
     public function execute()
     {
         $settings = $this->channels->settings();
@@ -45,6 +57,7 @@ class Progress extends Action implements HttpGetActionInterface
                 'status' => $setting['status'] ?? 'idle',
                 'label' => (string) __($setting['status'] ?? 'idle'),
                 'count' => (int) ($setting['count'] ?? 0),
+                'skipped' => (int) ($setting['skipped'] ?? 0),
                 'message' => (string) __($setting['message'] ?? ''),
                 'last_sync_at' => empty($date) ? '' : $this->timezone->formatDateTime(
                     $date,

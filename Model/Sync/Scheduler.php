@@ -12,6 +12,13 @@ use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 
 class Scheduler
 {
+    /**
+     * @param Settings $settings
+     * @param Queue $queue
+     * @param NightlyPolicy $policy
+     * @param TimezoneInterface $timezone
+     * @param LockManagerInterface $locks
+     */
     public function __construct(
         private readonly Settings $settings,
         private readonly Queue $queue,
@@ -21,6 +28,12 @@ class Scheduler
     ) {
     }
 
+    /**
+     * Queue full synchronization of connected store views.
+     *
+     * @param int|null $storeFilter
+     * @param bool $dueOnly
+     */
     public function queue(?int $storeFilter = null, bool $dueOnly = false): int
     {
         $count = 0;
@@ -28,7 +41,7 @@ class Scheduler
             if (($storeFilter !== null && $storeFilter !== $storeId) || empty($setting['setup_completed'])) {
                 continue;
             }
-            $lock = 'agent001_store_' . $storeId;
+            $lock = $this->queue->lockName(storeId: $storeId);
             if (!$this->locks->lock($lock, 0)) {
                 continue;
             }
@@ -47,8 +60,10 @@ class Scheduler
                 if (($setting['status'] ?? '') !== 'indexing') {
                     $setting['status'] = 'queued';
                 }
-                $this->settings->save(storeId: $storeId, data: $setting);
+                $this->settings->saveCurrent(storeId: $storeId, data: $setting);
                 ++$count;
+            } catch (AbortedException) {
+                continue;
             } finally {
                 $this->locks->unlock($lock);
             }

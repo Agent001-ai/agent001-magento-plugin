@@ -7,15 +7,27 @@ namespace Agent001\Assistant\Controller\Connect;
 use Agent001\Assistant\Model\Connect\NonceStore;
 use Agent001\Assistant\Model\Connect\Connection;
 use Agent001\Assistant\Model\Config;
+use Agent001\Assistant\Model\Sync\Queue;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Framework\Lock\LockManagerInterface;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 class Callback implements HttpGetActionInterface
 {
+    /**
+     * @param RequestInterface $request
+     * @param NonceStore $nonces
+     * @param Connection $connection
+     * @param RedirectFactory $redirect
+     * @param RawFactory $raw
+     * @param LockManagerInterface $locks
+     * @param LoggerInterface $logger
+     * @param Queue $queue
+     */
     public function __construct(
         private readonly RequestInterface $request,
         private readonly NonceStore $nonces,
@@ -23,9 +35,14 @@ class Callback implements HttpGetActionInterface
         private readonly RedirectFactory $redirect,
         private readonly RawFactory $raw,
         private readonly LockManagerInterface $locks,
+        private readonly LoggerInterface $logger,
+        private readonly Queue $queue,
     ) {
     }
 
+    /**
+     * Complete the Agent001 connection and return to settings.
+     */
     public function execute()
     {
         $token = $this->request->getParam('state');
@@ -36,7 +53,7 @@ class Callback implements HttpGetActionInterface
                 ->setHttpResponseCode(400)
                 ->setContents('Invalid connection state.');
         }
-        $lock = 'agent001_store_' . (int) $state['store_id'];
+        $lock = $this->queue->lockName(storeId: (int) $state['store_id']);
         $success = false;
         if ($this->locks->lock($lock, 0)) {
             try {
@@ -45,7 +62,10 @@ class Callback implements HttpGetActionInterface
                     $this->connection->complete(state: $state, code: $code);
                     $success = true;
                 }
-            } catch (Throwable) {
+            } catch (Throwable $error) {
+                $this->logger->error('Agent001 connection exchange failed.', [
+                    'exception_class' => $error::class, 'message' => $error->getMessage(),
+                ]);
                 $success = false;
             } finally {
                 $this->locks->unlock($lock);

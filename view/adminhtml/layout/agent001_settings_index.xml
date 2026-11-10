@@ -1,5 +1,14 @@
 <?xml version="1.0"?>
-<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
-    <head><css src="Agent001_Assistant::css/settings.css"/></head>
-    <body><referenceContainer name="content"><block class="Agent001\Assistant\Block\Adminhtml\Settings" name="agent001.settings" template="Agent001_Assistant::settings.phtml"/></referenceContainer></body>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Agent001_Assistant::css/settings.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Agent001\Assistant\Block\Adminhtml\Settings"
+                   name="agent001.settings"
+                   template="Agent001_Assistant::settings.phtml"/>
+        </referenceContainer>
+    </body>
 </page>
