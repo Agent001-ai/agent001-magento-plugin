@@ -13,7 +13,7 @@ AI shopping assistant for Magento Open Source and Adobe Commerce. It answers cus
 ## Installation
 
 ```sh
-composer require agent001/module-assistant
+composer require agent001/magento-support-assistant
 bin/magento module:enable Agent001_Assistant
 bin/magento setup:upgrade
 bin/magento setup:di:compile
