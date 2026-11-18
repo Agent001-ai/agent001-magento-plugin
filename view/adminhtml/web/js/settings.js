@@ -10,6 +10,18 @@ define(['jquery'], function ($) {
                 event.preventDefault();
             }
         });
+        root.on('change', 'select[name^="agent["]', function () {
+            var picked = this;
+
+            if (!picked.value) {
+                return;
+            }
+            root.find('select[name^="agent["]').not(picked).each(function () {
+                if (this.value === picked.value) {
+                    this.value = '';
+                }
+            });
+        });
         root.find('[data-role="category-group"]').each(function () {
             var group = $(this),
                 select = group.find('[data-role="category-select"]'),

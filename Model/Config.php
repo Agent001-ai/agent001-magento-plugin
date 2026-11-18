@@ -70,7 +70,7 @@ class Config
     }
 
     /**
-     * Return the base URL of the default store view.
+     * Return the store base URL of the default website without the store code.
      */
     public function defaultSite(): string
     {
@@ -78,7 +78,12 @@ class Config
         if (!$store) {
             throw new InvalidArgumentException(message: 'The default store view is not configured.');
         }
-        return $this->site(storeId: (int) $store->getId());
+        if (!$store->isActive()) {
+            throw new InvalidArgumentException(message: 'The store view is inactive.');
+        }
+        $url = $store->getBaseUrl('web', true);
+        $this->validateUrl(url: $url);
+        return rtrim(string: $url, characters: '/');
     }
 
     /**

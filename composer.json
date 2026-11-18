@@ -2,7 +2,7 @@
   "name": "agent001/magento-support-assistant",
   "description": "Agent001 catalog synchronization and storefront assistant for Magento 2",
   "type": "magento2-module",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "license": "proprietary",
   "require": {
     "php": ">=8.1",

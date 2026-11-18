@@ -292,9 +292,7 @@ $catalog = static function (int $storeId, array $channel) use ($escaper, $block,
                                     <?php endif; ?>
                                     <?php foreach ($agents as $agent): ?>
                                         <?php
-                                        $owner = $chosen === $agent->id
-                                            ? null
-                                            : $block->agentOwner(agent: $agent, storeId: $storeId);
+                                        $owner = $chosen === $agent->id ? null : $block->agentOwner(agent: $agent);
                                         ?>
                                         <option value="<?= $escaper->escapeHtmlAttr($agent->id) ?>"
                                                 <?= $chosen === $agent->id ? 'selected' : '' ?>

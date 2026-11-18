@@ -11,7 +11,7 @@ use RuntimeException;
 
 class Client
 {
-    public const VERSION = '1.1.0';
+    public const VERSION = '1.1.1';
 
     public const JSON_FLAGS = JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE;
 

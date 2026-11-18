@@ -233,24 +233,20 @@ class Settings extends Template
     }
 
     /**
-     * Return the label of another store view whose channel already uses the agent.
+     * Return the channel outside this installation that already uses the agent.
      *
      * @param AgentDTO $agent
-     * @param int $storeId
      */
-    public function agentOwner(AgentDTO $agent, int $storeId): ?string
+    public function agentOwner(AgentDTO $agent): ?string
     {
-        $own = $this->channelCode(storeId: $storeId);
+        $local = array_map(
+            callback: fn (int $id): string => $this->channelCode(storeId: $id),
+            array: array_keys(array: $this->channels()),
+        );
         foreach ($agent->channels as $channel) {
-            if ($channel === $own) {
-                continue;
+            if (!in_array(needle: $channel, haystack: $local, strict: true)) {
+                return $channel;
             }
-            foreach (array_keys(array: $this->channels()) as $id) {
-                if ($this->channelCode(storeId: $id) === $channel) {
-                    return $this->channels()[$id]['name'];
-                }
-            }
-            return $channel;
         }
         return null;
     }
